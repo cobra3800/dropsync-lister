@@ -1,0 +1,41 @@
+{
+  "name": "@dropsync/api",
+  "private": true,
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main.js",
+    "lint": "echo api lint ok"
+  },
+  "dependencies": {
+    "@nestjs/common": "latest",
+    "@nestjs/core": "latest",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "latest",
+    "@prisma/client": "5.22.0",
+    "bcrypt": "^6.0.0",
+    "bcryptjs": "latest",
+    "cookie-parser": "latest",
+    "dotenv": "^17.4.2",
+    "jsonwebtoken": "latest",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "reflect-metadata": "latest",
+    "rxjs": "latest"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.23",
+    "@nestjs/schematics": "latest",
+    "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "latest",
+    "@types/express": "latest",
+    "@types/jsonwebtoken": "latest",
+    "@types/node": "latest",
+    "@types/passport-jwt": "^4.0.1",
+    "prisma": "5.22.0",
+    "ts-node": "latest",
+    "tsconfig-paths": "latest",
+    "typescript": "5.8.3"
+  }
+}

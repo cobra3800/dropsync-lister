@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  name         String
+  passwordHash String
+  role         String       @default("MEMBER")
+  memberships  Membership[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  listingDrafts ListingDraft[]
+}
+
+model Organization {
+  id          String       @id @default(cuid())
+  name        String
+  memberships Membership[]
+  stores Store[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  listingDrafts ListingDraft[]
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String       @default("MEMBER")
+  createdAt      DateTime     @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+}model Store {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  name        String
+  marketplace String
+  status      String @default("CONNECTED")
+
+  listingDrafts ListingDraft[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ListingDraft {
+  id             String  @id @default(cuid())
+  organizationId String
+  storeId         String?
+  createdById     String
+
+  title           String
+  description     String
+  keywords        String
+  itemSpecifics   String
+  priceSuggestion Float?
+  status          String  @default("DRAFT")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  store        Store?       @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

@@ -1,0 +1,29 @@
+{
+  "name": "dropsync-ai",
+  "private": true,
+  "packageManager": "pnpm@11.11.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/adapter-better-sqlite3": "7.8.0",
+    "@prisma/client": "5.22.0",
+    "bcryptjs": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "prettier": "latest",
+    "prisma": "5.22.0",
+    "turbo": "latest",
+    "typescript": "latest"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  }
+}
