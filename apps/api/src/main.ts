@@ -6,13 +6,14 @@ import { config as loadEnv } from 'dotenv';
 function initializeEnv(): void {
   const envCandidates = [
     resolve(process.cwd(), '.env'),
+    resolve(process.cwd(), 'apps/api/.env'),
+    resolve(__dirname, '../.env'),
     resolve(process.cwd(), '../../.env'),
   ];
 
   for (const envPath of envCandidates) {
     if (existsSync(envPath)) {
       loadEnv({ path: envPath });
-      break;
     }
   }
 

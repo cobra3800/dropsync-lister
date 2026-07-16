@@ -51,11 +51,13 @@ model AuditLog {
   createdAt DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-}model Store {
+}
+
+model Store {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-
+  ebayAccount EbayAccount?
   name        String
   marketplace String
   status      String @default("CONNECTED")
@@ -82,6 +84,23 @@ model ListingDraft {
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   store        Store?       @relation(fields: [storeId], references: [id], onDelete: SetNull)
   createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EbayAccount {
+  id           String   @id @default(cuid())
+  storeId      String   @unique
+  ebayUserId   String?
+  environment  String   @default("sandbox")
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  scope        String?
+  connectedAt  DateTime?
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
