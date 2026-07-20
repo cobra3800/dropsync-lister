@@ -2,10 +2,12 @@ import {
   Body,
   Controller,
   Get,
+   Post,
   Put,
   Query,
   Res,
 } from '@nestjs/common';
+import { OfferService } from './offer.service.js';
 import type { Response } from 'express';
 import { EbayService } from './ebay.service.js';
 import { MerchantLocationService } from './merchant-location.service';
@@ -19,6 +21,7 @@ export class EbayController {
   private readonly ebayService: EbayService,
   private readonly merchantLocationService: MerchantLocationService,
   private readonly inventoryService: InventoryService,
+  private readonly offerService: OfferService,
 ) {}
 
   @Get('connect')
@@ -32,47 +35,54 @@ export class EbayController {
   }
 
   @Get('callback')
-  async callback(
-    @Query('code') code?: string,
-    @Query('state') storeId?: string,
-    @Query('error') error?: string,
-  ) {
-    if (error) {
-      return {
-        connected: false,
-        error,
-      };
-    }
-
-    if (!code) {
-      return {
-        connected: false,
-        error: 'missing_authorization_code',
-      };
-    }
-
-    if (!storeId) {
-      return {
-        connected: false,
-        error: 'missing_store_id',
-      };
-    }
-
-    const tokens =
-      await this.ebayService.exchangeAuthorizationCode(
-        code,
-        storeId,
-      );
-
+async callback(
+  @Query('code') code?: string,
+  @Query('state') storeId?: string,
+  @Query('error') error?: string,
+) {
+  if (error) {
     return {
-      connected: true,
-      tokenType: tokens.token_type,
-      accessTokenExpiresIn: tokens.expires_in,
-      refreshTokenReceived: Boolean(tokens.refresh_token),
-      refreshTokenExpiresIn:
-        tokens.refresh_token_expires_in ?? null,
+      connected: false,
+      error,
     };
   }
+
+  if (!code) {
+    return {
+      connected: false,
+      error: 'missing_authorization_code',
+    };
+  }
+
+  if (!storeId) {
+    return {
+      connected: false,
+      error: 'missing_store_id',
+    };
+  }
+
+  const tokens =
+    await this.ebayService.exchangeAuthorizationCode(
+      code,
+      storeId,
+    );
+
+  return {
+    connected: true,
+    tokenType: tokens.token_type,
+    accessTokenExpiresIn: tokens.expires_in,
+    refreshTokenReceived: Boolean(tokens.refresh_token),
+    refreshTokenExpiresIn:
+      tokens.refresh_token_expires_in ?? null,
+  };
+}
+
+@Post('inventory-item')
+async createInventoryItem(
+  @Body() body: CreateInventoryItemInput,
+) {
+  return this.inventoryService.createInventoryItem(body);
+}
 
   @Get('locations')
 async getLocations(
@@ -92,6 +102,36 @@ async createMerchantLocation(
   @Body() input: CreateLocationInput,
 ) {
   return this.inventoryService.createMerchantLocation(input);
+}
+@Post('create-offer')
+async createOffer(
+  @Body() body: any,
+) {
+  return this.offerService.createOffer(body);
+}
+@Post('publish-offer')
+async publishOffer(
+  @Body() body: { storeId: string; offerId: string },
+) {
+  return this.offerService.publishOffer(body);
+}
+@Get('policies')
+async getPolicies(
+  @Query('storeId') storeId: string,
+) {
+  return this.ebayService.getBusinessPolicies(storeId);
+}
+@Post('policies/create-fulfillment')
+async createFulfillmentPolicy(
+  @Body() body: { storeId: string },
+) {
+  return this.ebayService.createFulfillmentPolicy(body.storeId);
+}
+@Post('policies/create-defaults')
+async createDefaultPolicies(
+  @Body() body: { storeId: string },
+) {
+  return this.ebayService.createDefaultPolicies(body.storeId);
 }
 }
   

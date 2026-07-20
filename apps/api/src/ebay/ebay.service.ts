@@ -225,8 +225,324 @@ export class EbayService {
         message: 'Unable to check eBay programs',
         ebayError: result,
       });
-    }
+      
 
     return result;
   } // closes getOptedInPrograms()
+  return result;
+}
+  async getBusinessPolicies(storeId: string) {
+  const account = await this.ebayRepository.findByStore(storeId);
+
+  if (!account) {
+    throw new BadRequestException(
+      'No eBay account found for this store.',
+    );
+  }
+
+  let accessToken = account.accessToken;
+
+  if (!accessToken) {
+    throw new BadRequestException(
+      'No eBay access token found. Reconnect the store.',
+    );
+  }
+
+  if (!account.expiresAt || account.expiresAt <= new Date()) {
+    accessToken = await this.refreshAccessToken(storeId);
+  }
+
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    Accept: 'application/json',
+    'Content-Language': 'en-US',
+  };
+
+  const baseUrl =
+    'https://api.sandbox.ebay.com/sell/account/v1';
+
+  const [paymentResponse, returnResponse, fulfillmentResponse] =
+    await Promise.all([
+      fetch(
+        `${baseUrl}/payment_policy?marketplace_id=EBAY_US`,
+        { headers },
+      ),
+      fetch(
+        `${baseUrl}/return_policy?marketplace_id=EBAY_US`,
+        { headers },
+      ),
+      fetch(
+        `${baseUrl}/fulfillment_policy?marketplace_id=EBAY_US`,
+        { headers },
+      ),
+    ]);
+
+  const paymentPolicies = await paymentResponse.json();
+  const returnPolicies = await returnResponse.json();
+  const fulfillmentPolicies =
+    await fulfillmentResponse.json();
+
+  if (
+  !paymentResponse.ok ||
+  !returnResponse.ok ||
+  !fulfillmentResponse.ok
+) {
+  throw new BadRequestException({
+    message: 'Unable to retrieve eBay business policies',
+    paymentPolicies,
+    returnPolicies,
+    fulfillmentPolicies,
+  });
+}
+
+return {
+  paymentPolicies,
+  returnPolicies,
+  fulfillmentPolicies,
+};
+}
+
+async optInToBusinessPolicies(storeId: string) {
+  const account = await this.ebayRepository.findByStore(storeId);
+
+  if (!account?.accessToken) {
+    throw new BadRequestException(
+      'No connected eBay account found for this store.',
+    );
+  }
+
+  let accessToken = account.accessToken;
+
+  if (!account.expiresAt || account.expiresAt <= new Date()) {
+    accessToken = await this.refreshAccessToken(storeId);
+  }
+
+  const response = await fetch(
+    'https://api.sandbox.ebay.com/sell/account/v1/program/opt_in',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Content-Language': 'en-US',
+      },
+      body: JSON.stringify({
+        programType: 'SELLING_POLICY_MANAGEMENT',
+      }),
+    },
+  );
+
+  const responseText = await response.text();
+
+  let ebayResult: unknown = null;
+
+  if (responseText) {
+    try {
+      ebayResult = JSON.parse(responseText);
+    } catch {
+      ebayResult = responseText;
+    }
+  }
+
+  if (!response.ok) {
+    throw new BadRequestException({
+      message: 'Unable to opt in to eBay Business Policies',
+      ebayError: ebayResult,
+    });
+}
+
+
+  return {
+    optedIn: true,
+    statusCode: response.status,
+    ebayResult,
+  };
+  }
+  async createDefaultPolicies(storeId: string) {
+  const account = await this.ebayRepository.findByStore(storeId);
+
+  if (!account?.accessToken) {
+    throw new BadRequestException(
+      'No connected eBay account found for this store.',
+    );
+  }
+
+  let accessToken = account.accessToken;
+
+  if (!account.expiresAt || account.expiresAt <= new Date()) {
+    accessToken = await this.refreshAccessToken(storeId);
+  }
+
+  const response = await fetch(
+    'https://api.sandbox.ebay.com/sell/account/v1/payment_policy',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Content-Language': 'en-US',
+      },
+      body: JSON.stringify({
+  name: 'DropSync Payment Policy',
+  marketplaceId: 'EBAY_US',
+  categoryTypes: [
+    {
+      name: 'ALL_EXCLUDING_MOTORS_VEHICLES',
+      default: true,
+    },
+  ],
+  immediatePay: true,
+}),
+    },
+  );
+
+  const responseText = await response.text();
+
+let result: unknown = null;
+
+if (responseText) {
+  try {
+    result = JSON.parse(responseText);
+  } catch {
+    result = responseText;
+  }
+}
+const returnResponse = await fetch(
+  'https://api.sandbox.ebay.com/sell/account/v1/return_policy',
+  {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'Content-Language': 'en-US',
+    },
+    body: JSON.stringify({
+      name: 'DropSync Return Policy',
+      marketplaceId: 'EBAY_US',
+      categoryTypes: [
+        {
+          name: 'ALL_EXCLUDING_MOTORS_VEHICLES',
+          default: true,
+        },
+      ],
+      returnsAccepted: true,
+      returnPeriod: {
+        value: 30,
+        unit: 'DAY',
+      },
+      refundMethod: 'MONEY_BACK',
+      returnShippingCostPayer: 'BUYER',
+    }),
+  },
+);
+const returnResponseText = await returnResponse.text();
+
+let returnResult: unknown = null;
+
+if (returnResponseText) {
+  try {
+    returnResult = JSON.parse(returnResponseText);
+  } catch {
+    returnResult = returnResponseText;
+  }
+}
+
+  return {
+  paymentPolicy: {
+    status: response.status,
+    ok: response.ok,
+    location: response.headers.get('location'),
+    result,
+  },
+
+  returnPolicy: {
+    status: returnResponse.status,
+    ok: returnResponse.ok,
+    location: returnResponse.headers.get('location'),
+    result: returnResult,
+  },
+};
+}
+
+async createFulfillmentPolicy(storeId: string) {
+  const account = await this.ebayRepository.findByStore(storeId);
+
+  if (!account?.accessToken) {
+    throw new BadRequestException(
+      'No connected eBay account found for this store.',
+    );
+  }
+
+  let accessToken = account.accessToken;
+
+  if (!account.expiresAt || account.expiresAt <= new Date()) {
+    accessToken = await this.refreshAccessToken(storeId);
+  }
+
+ const response = await fetch(
+  'https://api.sandbox.ebay.com/sell/account/v1/fulfillment_policy',
+  {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      'Content-Language': 'en-US',
+    },
+    body: JSON.stringify({
+      name: 'DropSync Shipping Policy',
+      marketplaceId: 'EBAY_US',
+
+      categoryTypes: [
+        {
+          name: 'ALL_EXCLUDING_MOTORS_VEHICLES',
+          default: true,
+        },
+      ],
+
+      handlingTime: {
+        value: 1,
+        unit: 'DAY',
+      },
+
+      shippingOptions: [
+        {
+          optionType: 'DOMESTIC',
+          costType: 'FLAT_RATE',
+          shippingServices: [
+            {
+              buyerResponsibleForShipping: false,
+              freeShipping: true,
+              shippingCarrierCode: 'USPS',
+              shippingServiceCode: 'USPSPriorityFlatRateBox',
+            },
+          ],
+        },
+      ],
+    }),
+  },
+);
+
+ const responseText = await response.text();
+let result: unknown = null;
+
+  if (responseText) {
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      result = responseText;
+    }
+  }
+
+  return {
+    status: response.status,
+    ok: response.ok,
+    location: response.headers.get('location'),
+    result,
+  };
+}
+
 } // closes EbayService

@@ -55,9 +55,20 @@ export class AuthController {
   }
 
   private setCookie(res: Response, userId: string) {
-    const token = jwt.sign({ sub: userId }, jwtSecret(), { expiresIn: '7d' });
-    res.cookie(COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 7 * 24 * 60 * 60 * 1000 });
-  }
+  const token = jwt.sign(
+    { sub: userId },
+    jwtSecret(),
+    { expiresIn: '7d' },
+  );
+
+  res.cookie(COOKIE, token, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: false,
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+}
 
   private getUserId(req: Request) {
     const token = req.cookies?.[COOKIE];

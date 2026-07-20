@@ -68,13 +68,19 @@ let accessToken = account.accessToken;
     }
 
     const product: Record<string, unknown> = {
-      title,
-      description,
-      aspects: {
-        Brand: [brand],
-        MPN: [mpn],
-      },
-    };
+  title,
+  description,
+  aspects: {
+    Brand: [brand],
+    MPN: [mpn],
+    Style: ['Casual'],
+    'Size Type': ['Regular'],
+     Department: ['Men'],
+    Size: ['M'],
+    Color: ['Black'],
+    Inseam: ['32 in'],
+  },
+};
 
     if (imageUrls.length > 0) {
       product.imageUrls = imageUrls;
