@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ImporterModule } from './importer/importer.module.js';
 import { AppController } from './app.controller.js';
 import { PrismaService } from './prisma.service.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -10,13 +11,14 @@ import { EbayModule } from './ebay/ebay.module.js';
 
 @Module({
   imports: [
-    AuthModule,
-    OrganizationsModule,
-    StoresModule,
-    AiModule,
-    ListingDraftsModule,
-    EbayModule,
-  ],
+  AuthModule,
+  OrganizationsModule,
+  StoresModule,
+  AiModule,
+  ImporterModule,
+  ListingDraftsModule,
+  EbayModule,
+],
   controllers: [AppController],
   providers: [PrismaService],
 })

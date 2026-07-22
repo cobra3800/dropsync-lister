@@ -3,6 +3,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import OpenAI from 'openai';
+import { ImporterService } from '../importer/importer.service.js';
 
 type GeneratedListing = {
   title: string;
@@ -17,6 +18,9 @@ export class AiService {
   private readonly openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
+  constructor(
+  private readonly importerService: ImporterService,
+) {}
 
   async generateListing(url: string): Promise<GeneratedListing> {
     if (!process.env.OPENAI_API_KEY) {
@@ -24,7 +28,7 @@ export class AiService {
         'OPENAI_API_KEY is not configured',
       );
     }
-
+    const product = await this.importerService.importProduct(url);
     const response = await this.openai.responses.create({
       model: 'gpt-5.5',
       instructions: `
@@ -49,7 +53,16 @@ Rules:
 - Return price as numbers only, such as "29.99".
 - Do not include markdown fences.
       `.trim(),
-      input: `Create an eBay listing using this product URL: ${url}`,
+input: `
+Create an eBay listing using this product.
+
+Title: ${product.title}
+Brand: ${product.brand}
+Description: ${product.description}
+Category: ${product.category}
+Features:
+${product.features.join('\n')}
+`,
     });
 
     try {
