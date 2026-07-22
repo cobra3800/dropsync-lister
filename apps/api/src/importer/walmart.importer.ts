@@ -1,9 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { AmazonProduct } from './amazon.importer.js';
+
+import type { SupplierProduct } from './product.types.js';
 
 @Injectable()
 export class WalmartImporter {
-  async import(url: string): Promise<AmazonProduct> {
+  async import(url: string): Promise<SupplierProduct> {
     return {
       title: 'Walmart Product',
       brand: '',
