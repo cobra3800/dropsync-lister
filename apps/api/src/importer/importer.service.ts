@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { ImporterFactory } from './importer.factory.js';
 
 export type ImportedProduct = {
   source: 'amazon' | 'walmart' | 'ebay' | 'aliexpress' | 'unknown';
@@ -16,6 +17,10 @@ export type ImportedProduct = {
 
 @Injectable()
 export class ImporterService {
+  constructor(
+    private readonly importerFactory: ImporterFactory,
+  ) {}
+
   async importProduct(url: string): Promise<ImportedProduct> {
     const normalizedUrl = url.trim();
 
@@ -23,58 +28,32 @@ export class ImporterService {
       throw new BadRequestException('Product URL is required');
     }
 
-    let parsedUrl: URL;
-
     try {
-      parsedUrl = new URL(normalizedUrl);
+      new URL(normalizedUrl);
     } catch {
       throw new BadRequestException('Please enter a valid product URL');
     }
 
-    const source = this.detectSource(parsedUrl.hostname);
+    const importer = this.importerFactory.getImporter(normalizedUrl);
+    const product = await importer.import(normalizedUrl);
 
     return {
-      source,
+      source: this.detectSource(normalizedUrl),
       sourceUrl: normalizedUrl,
-      title: this.buildTemporaryTitle(source, normalizedUrl),
-      currency: 'USD',
-      features: [],
-      images: [],
-      specifications: {},
+      ...product,
     };
   }
 
   private detectSource(
-    hostname: string,
+    url: string,
   ): ImportedProduct['source'] {
-    const host = hostname.toLowerCase();
+    const value = url.toLowerCase();
 
-    if (host.includes('amazon.')) return 'amazon';
-    if (host.includes('walmart.')) return 'walmart';
-    if (host.includes('ebay.')) return 'ebay';
-    if (host.includes('aliexpress.')) return 'aliexpress';
+    if (value.includes('amazon.com')) return 'amazon';
+    if (value.includes('walmart.com')) return 'walmart';
+    if (value.includes('ebay.com')) return 'ebay';
+    if (value.includes('aliexpress.com')) return 'aliexpress';
 
     return 'unknown';
-  }
-
-  private buildTemporaryTitle(
-    source: ImportedProduct['source'],
-    url: string,
-  ): string {
-    if (source === 'amazon') {
-      const asin = this.extractAmazonAsin(url);
-
-      if (asin) {
-        return `Amazon Product ${asin}`;
-      }
-    }
-
-    return `${source === 'unknown' ? 'Supplier' : source} product`;
-  }
-
-  private extractAmazonAsin(url: string): string | null {
-    const match = url.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
-
-    return match?.[1]?.toUpperCase() ?? null;
   }
 }
