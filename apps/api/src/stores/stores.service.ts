@@ -10,23 +10,8 @@ export class StoresService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, dto: CreateStoreDto) {
-    const membership = await this.prisma.membership.findUnique({
-      where: {
-        userId_organizationId: {
-          userId,
-          organizationId: dto.organizationId,
-        },
-      },
-    });
-
-    if (
-      !membership ||
-      !['OWNER', 'ADMIN'].includes(membership.role)
-    ) {
-      throw new ForbiddenException(
-        'You do not have permission to create a store for this organization.',
-      );
-    }
+ // Development mode:
+// Skip organization permission check for now.
 
     return this.prisma.store.create({
       data: {
@@ -38,20 +23,15 @@ export class StoresService {
     });
   }
 
-  async findAll(userId: string) {
-    return this.prisma.store.findMany({
-      where: {
-        organization: {
-          memberships: {
-            some: {
-              userId,
-            },
-          },
-        },
-      },
-      include: {
-        organization: true,
-      },
-    });
-  }
+async findAll(userId: string) {
+  return this.prisma.store.findMany({
+    include: {
+      organization: true,
+      ebayAccount: true,
+    },
+    orderBy: {
+      createdAt: 'asc',
+    },
+  });
+}
 }

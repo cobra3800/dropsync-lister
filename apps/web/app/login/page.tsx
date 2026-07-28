@@ -6,7 +6,7 @@ import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:4000';
+  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
 export default function LoginPage() {
   const router = useRouter();

@@ -11,6 +11,9 @@ type GeneratedListing = {
   price: string;
   category: string;
   itemSpecifics: Record<string, string>;
+  condition: string;
+seoKeywords: string[];
+shippingWeight: string;
 };
 
 @Injectable()
@@ -30,40 +33,43 @@ export class AiService {
     }
     const product = await this.importerService.importProduct(url);
     const response = await this.openai.responses.create({
-      model: 'gpt-5.5',
-      instructions: `
-You create professional eBay product listings.
+  model: 'gpt-5.5',
+  instructions: `
+You are a professional eBay listing expert.
 
-Return only valid JSON with this exact structure:
+Using the imported supplier product information, create an optimized eBay listing.
+
+Return ONLY valid JSON using this exact format:
+
 {
-  "title": "string",
-  "description": "string",
-  "price": "string",
-  "category": "string",
-  "itemSpecifics": {
-    "Brand": "string",
-    "Condition": "string"
-  }
+  "title": "",
+  "description": "",
+  "price": "",
+  "category": "",
+  "condition": "",
+  "itemSpecifics": {},
+  "seoKeywords": [],
+  "shippingWeight": ""
 }
 
 Rules:
-- Keep the title at 80 characters or fewer.
-- Do not invent product facts that are not available.
-- Use a clear, buyer-friendly description.
-- Return price as numbers only, such as "29.99".
-- Do not include markdown fences.
-      `.trim(),
-input: `
-Create an eBay listing using this product.
 
-Title: ${product.title}
-Brand: ${product.brand}
-Description: ${product.description}
-Category: ${product.category}
-Features:
-${product.features.join('\n')}
-`,
-    });
+- Write a title under 80 characters.
+- Make the description persuasive and SEO friendly.
+- Improve grammar.
+- Recommend a competitive selling price.
+- Suggest the best eBay category.
+- Generate realistic item specifics.
+- Include search keywords buyers would use.
+- Estimate shipping weight.
+`.trim(),
+
+  input: `
+Supplier Product
+
+${JSON.stringify(product, null, 2)}
+`.trim(),
+});
 
     try {
       return JSON.parse(response.output_text) as GeneratedListing;

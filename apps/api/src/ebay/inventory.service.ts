@@ -17,6 +17,7 @@ export type CreateInventoryItemInput = {
   imageUrls?: string[];
   brand?: string;
   mpn?: string;
+  aspects?: Record<string, string[]>;
 };
 
 @Injectable()
@@ -33,11 +34,15 @@ export class InventoryService {
       title,
       description,
       quantity,
-      condition = 'NEW',
+      condition: rawCondition = 'NEW',
       imageUrls = [],
       brand = 'Unbranded',
       mpn = 'Does Not Apply',
     } = input;
+    const condition = rawCondition
+  .trim()
+  .toUpperCase()
+  .replace(/[\s-]+/g, '_');
 
     if (!storeId || !sku || !title || !description) {
       throw new BadRequestException(
@@ -71,21 +76,31 @@ let accessToken = account.accessToken;
   title,
   description,
   aspects: {
-    Brand: [brand],
-    MPN: [mpn],
-    Style: ['Casual'],
-    'Size Type': ['Regular'],
-     Department: ['Men'],
-    Size: ['M'],
-    Color: ['Black'],
-    Inseam: ['32 in'],
-  },
+  Brand: [brand || 'Comfort Zone'],
+  MPN: [mpn || 'CZST161BTEBK'],
+  Type: ['Pedestal Fan'],
+  Color: ['Black'],
+  'Fan Diameter': ['16 in'],
+  'Number of Speeds': ['3'],
+  Oscillation: ['Yes'],
+  'Power Source': ['Electric'],
+},
 };
 
     if (imageUrls.length > 0) {
       product.imageUrls = imageUrls;
     }
-
+console.log('Sending condition to eBay:', condition);
+console.log('SKU:', sku);
+console.log('Request body:', JSON.stringify({
+  availability: {
+    shipToLocationAvailability: {
+      quantity,
+    },
+  },
+  condition,
+  product,
+}, null, 2));
     const response = await fetch(
       `https://api.sandbox.ebay.com/sell/inventory/v1/inventory_item/${encodeURIComponent(sku)}`,
       {

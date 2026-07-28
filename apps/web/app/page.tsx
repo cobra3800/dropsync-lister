@@ -6,7 +6,23 @@ export default function HomePage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-3"><div className="rounded-xl bg-blue-600 p-2"><Boxes /></div><b>DropSync</b></div>
-        <div className="flex gap-3"><Link href="/login" className="rounded-xl px-4 py-2 text-slate-300">Login</Link><Link href="/register" className="rounded-xl bg-white px-4 py-2 font-semibold text-slate-950">Start Free</Link></div>
+        <div className="flex gap-3">
+    <Link
+        href="/login"
+        className="rounded-xl px-4 py-2 text-slate-300 hover:text-white"
+    >
+        Login
+    </Link>
+
+    <Link
+  href="/register"
+  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 font-semibold hover:bg-slate-100 transition"
+  style={{ color: '#0f172a' }}
+>
+  Create account
+  <ArrowRight size={18} />
+</Link>
+</div>
       </nav>
       <section className="mx-auto grid max-w-6xl gap-10 px-6 py-20 md:grid-cols-2 md:items-center">
         <div>
