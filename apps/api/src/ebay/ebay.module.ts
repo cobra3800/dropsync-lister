@@ -6,8 +6,14 @@ import { MerchantLocationService } from './merchant-location.service.js';
 import { EbayAccountRepository } from './repositories/ebay-account.repository.js';
 import { InventoryService } from './inventory.service.js';
 import { OfferService } from './offer.service.js';
+import { TaxonomyService } from './taxonomy.service.js';
+import { AspectsService } from './aspects.service.js';
+import { AiModule } from '../ai/ai.module.js';
 
 @Module({
+  imports: [
+    AiModule,
+  ],
   controllers: [EbayController],
   providers: [
     PrismaService,
@@ -16,6 +22,8 @@ import { OfferService } from './offer.service.js';
     MerchantLocationService,
     InventoryService,
      OfferService,
+     TaxonomyService,
+      AspectsService,
   ],
   exports: [
     EbayService,
@@ -23,6 +31,8 @@ import { OfferService } from './offer.service.js';
     MerchantLocationService,
     InventoryService,
      OfferService,
+     TaxonomyService,
+      AspectsService,
 
   ],
 })

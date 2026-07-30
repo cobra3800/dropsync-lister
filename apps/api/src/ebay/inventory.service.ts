@@ -6,6 +6,7 @@ import {
 import { EbayService } from './ebay.service.js';
 import { EbayAccountRepository } from './repositories/ebay-account.repository.js';
 import type { CreateLocationInput } from './location.dto.js';
+import { AspectMapperService } from '../ai/aspect-mapper.service.js';
 
 export type CreateInventoryItemInput = {
   storeId: string;
@@ -23,23 +24,25 @@ export type CreateInventoryItemInput = {
 @Injectable()
 export class InventoryService {
   constructor(
-    private readonly ebayAccountRepository: EbayAccountRepository,
-    private readonly ebayService: EbayService,
-  ) {}
+  private readonly ebayAccountRepository: EbayAccountRepository,
+  private readonly ebayService: EbayService,
+  private readonly aspectMapper: AspectMapperService,
+) {}
 
   async createInventoryItem(input: CreateInventoryItemInput) {
     const {
-      storeId,
-      sku,
-      title,
-      description,
-      quantity,
-      condition: rawCondition = 'NEW',
-      imageUrls = [],
-      brand = 'Unbranded',
-      mpn = 'Does Not Apply',
-    } = input;
-    const condition = rawCondition
+  storeId,
+  sku,
+  title,
+  description,
+  quantity,
+  condition: rawCondition,
+  imageUrls = [],
+  brand,
+  mpn,
+  aspects,
+} = input;
+    const condition = (rawCondition ?? 'NEW')
   .trim()
   .toUpperCase()
   .replace(/[\s-]+/g, '_');
@@ -72,19 +75,22 @@ let accessToken = account.accessToken;
         await this.ebayService.refreshAccessToken(storeId);
     }
 
-    const product: Record<string, unknown> = {
+ const mappedAspects = await this.aspectMapper.map(
   title,
   description,
-  aspects: {
-  Brand: [brand || 'Comfort Zone'],
-  MPN: [mpn || 'CZST161BTEBK'],
-  Type: ['Pedestal Fan'],
-  Color: ['Black'],
-  'Fan Diameter': ['16 in'],
-  'Number of Speeds': ['3'],
-  Oscillation: ['Yes'],
-  'Power Source': ['Electric'],
-},
+  Object.keys(aspects ?? {}),
+);
+
+const product: Record<string, unknown> = {
+  title,
+  description,
+  aspects:
+    Object.keys(mappedAspects).length > 0
+      ? mappedAspects
+      : {
+          Brand: [brand || 'Unbranded'],
+          MPN: [mpn || 'Does Not Apply'],
+        },
 };
 
     if (imageUrls.length > 0) {

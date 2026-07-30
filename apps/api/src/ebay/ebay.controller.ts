@@ -1,8 +1,9 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
-   Post,
+  Post,
   Put,
   Query,
   Res,
@@ -14,6 +15,8 @@ import { MerchantLocationService } from './merchant-location.service';
 import { InventoryService } from './inventory.service.js';
 import type { CreateInventoryItemInput } from './inventory.service.js';
 import type { CreateLocationInput } from './location.dto.js';
+import { TaxonomyService } from './taxonomy.service.js';
+import { AspectsService } from './aspects.service.js';
 
 @Controller('ebay')
 export class EbayController {
@@ -22,6 +25,8 @@ export class EbayController {
   private readonly merchantLocationService: MerchantLocationService,
   private readonly inventoryService: InventoryService,
   private readonly offerService: OfferService,
+  private readonly taxonomyService: TaxonomyService,
+  private readonly aspectsService: AspectsService,
 ) {}
 
   @Get('connect')
@@ -133,5 +138,36 @@ async createDefaultPolicies(
 ) {
   return this.ebayService.createDefaultPolicies(body.storeId);
 }
+@Get('category-suggestions')
+async getCategorySuggestions(
+  @Query('storeId') storeId: string,
+  @Query('title') title: string,
+) {
+  if (!storeId || !title) {
+    throw new BadRequestException(
+      'storeId and title are required',
+    );
+  }
+
+  return this.taxonomyService.suggestCategory(
+    storeId,
+    title,
+  );
 }
-  
+@Get('category-aspects')
+async getCategoryAspects(
+  @Query('storeId') storeId: string,
+  @Query('categoryId') categoryId: string,
+) {
+  if (!storeId || !categoryId) {
+    throw new BadRequestException(
+      'storeId and categoryId are required',
+    );
+  }
+
+  return this.aspectsService.getCategoryAspects(
+    storeId,
+    categoryId,
+  );
+}
+}

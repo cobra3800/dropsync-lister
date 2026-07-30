@@ -240,21 +240,113 @@ if (!response.ok) {
 
     setPolicies(data);
 
-    return data as EbayPolicies;
+return data as EbayPolicies;
+}
+
+async function handleAutoListClick() {
+  if (!product || !listing) {
+    setError('Import a product and generate a listing first.');
+    return;
   }
 
-  async function handlePublishClick() {
-    if (!product || !listing) {
-      setError('Import a product and generate an AI listing first.');
-      return;
+  setError('');
+  setPublishing(true);
+  setPublishStep('Optimizing listing...');
+
+  try {
+    const optimizedListing = await handleOptimizeClick();
+
+if (!optimizedListing) {
+  throw new Error('Unable to optimize listing');
+}
+
+setPublishStep('Publishing optimized listing to eBay...');
+
+await handlePublishClick(optimizedListing);
+  } catch (error) {
+  setError(
+    error instanceof Error
+      ? error.message
+      : 'Unable to optimize listing',
+  );
+
+  return null;
+} finally {
+  setGenerating(false);
+}
+}
+
+async function handleOptimizeClick() {
+
+  if (!product || !listing ) {
+    setError('Import a product and generate an AI listing first.');
+    return;
+  }
+
+  setGenerating(true);
+  setError('');
+
+  try {
+    const response = await fetch(
+      `${API_URL}/ai/optimize-listing`,
+      {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          product,
+          listing,
+        }),
+      },
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.message ?? 'Unable to optimize listing',
+      );
     }
 
-    setPublishing(true);
-    setError('');
-    setPublishResult(null);
-    setPublishStep('Loading connected store...');
+    const optimizedListing = {
+  ...listing,
+  ...result,
+};
 
-    try {
+setListing(optimizedListing);
+
+return optimizedListing;
+} catch (error) {
+  setError(
+    error instanceof Error
+      ? error.message
+      : 'Unable to optimize listing',
+  );
+
+  return null;
+} finally {
+  setGenerating(false);
+}
+}
+
+async function handlePublishClick(
+  listingOverride?: Listing,
+) {
+  const listingToPublish = listingOverride ?? listing;
+
+  if (!product || !listingToPublish) {
+    setError('Import a product and generate an AI listing first.');
+    return;
+  }
+
+  setPublishing(true);
+  setError('');
+  setPublishResult(null);
+  setPublishStep('Loading connected store...');
+
+  try {
       const activeStoreId = storeId || (await loadStoreId());
       const sku = `dropsync-${Date.now()}`;
 
@@ -323,29 +415,106 @@ setPublishStep('Creating inventory item...');
           body: JSON.stringify({
             storeId: activeStoreId,
             sku,
-            title: listing.title ?? product.title,
-            description: listing.description ?? product.description,
+            title: listingToPublish.title ?? product.title ?? 'Product',
+description: listingToPublish.description ?? product.description,
             quantity: 1,
             condition: 'NEW',
             imageUrls: product.images ?? [],
             aspects: {
-               Type: ['Pedestal Fan'],
+  Brand: [
+    String(
+      listingToPublish.itemSpecifics?.Brand ??
+        product.brand ??
+        'NIAKUN',
+    ),
+  ],
+
+  Processor: [
+    String(
+      listingToPublish.itemSpecifics?.Processor ??
+        'Intel Pentium Gold 4425Y',
+    ),
+  ],
+
+  'Screen Size': [
+    String(
+      listingToPublish.itemSpecifics?.['Screen Size'] ??
+        '15.6 in',
+    ),
+  ],
+
+  Type: ['Notebook/Laptop'],
 },
-          }),
-        },
-      );
+    }),
+  },
+);
 
-      const inventoryResult = await inventoryResponse.json();
+const inventoryResult = await inventoryResponse.json();
 
-      if (!inventoryResponse.ok) {
-        throw new Error(
-          inventoryResult.message ?? 'Unable to create inventory item',
-        );
-      }
+if (!inventoryResponse.ok) {
+  throw new Error(
+    inventoryResult.message ?? 'Unable to create inventory item',
+  );
+}
 
+setPublishStep('Finding the best eBay category...');
+
+const categoryResponse = await fetch(
+  `${API_URL}/ebay/category-suggestions?storeId=${encodeURIComponent(
+    activeStoreId,
+  )}&title=${encodeURIComponent(
+    listingToPublish.title ?? product.title ?? 'Product',
+  )}`,
+  {
+    credentials: 'include',
+  },
+);
+const categorySuggestions = await categoryResponse.json();
+
+if (!categoryResponse.ok) {
+  throw new Error(
+    categorySuggestions.message ?? 'Unable to find an eBay category',
+  );
+}
+
+const suggestedCategoryId =
+  categorySuggestions?.[0]?.category?.categoryId;
+
+if (!suggestedCategoryId) {
+  throw new Error('eBay did not return a suggested category');
+}
+
+console.log(
+  'Suggested category:',
+  suggestedCategoryId,
+);
+setPublishStep('Loading eBay item specifics...');
+
+const aspectsResponse = await fetch(
+  `${API_URL}/ebay/category-aspects?storeId=${encodeURIComponent(
+    activeStoreId,
+  )}&categoryId=${encodeURIComponent(suggestedCategoryId)}`,
+  {
+    credentials: 'include',
+  },
+);
+
+const categoryAspects = await aspectsResponse.json();
+
+if (!aspectsResponse.ok) {
+  throw new Error(
+    categoryAspects.message ?? 'Unable to load eBay item specifics',
+  );
+}
+
+const requiredAspects = categoryAspects.filter(
+  (aspect: { required?: boolean }) => aspect.required === true,
+);
+
+console.log('Required eBay aspects:', requiredAspects);
       setPublishStep('Creating eBay offer...');
 
-const rawOfferPrice = Number(listing.price ?? product.price ?? 0);
+const rawOfferPrice = Number(listingToPublish.price?? product.price ?? 0);
 
 const offerPrice =
   Number.isFinite(rawOfferPrice) && rawOfferPrice > 0
@@ -368,7 +537,7 @@ const offerResponse = await fetch(
       marketplaceId: 'EBAY_US',
       format: 'FIXED_PRICE',
       availableQuantity: 1,
-      categoryId: '20612',
+      categoryId: suggestedCategoryId,
       merchantLocationKey: 'main',
       price: offerPrice,
       currency: 'USD',
@@ -664,14 +833,36 @@ const offerResult = await offerResponse.json();
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={handlePublishClick}
-            disabled={publishing}
-            className="mt-8 w-full rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {publishing ? 'Publishing...' : 'Publish to eBay'}
-          </button>
+          <div className="mt-6 space-y-3">
+  <button
+    type="button"
+    onClick={handleAutoListClick}
+    disabled={publishing || generating || loading}
+    className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+  >
+    🤖 Auto List
+  </button>
+
+  <div className="flex gap-4">
+    <button
+      type="button"
+      onClick={handleOptimizeClick}
+      disabled={generating || publishing || loading}
+      className="flex-1 rounded-lg bg-purple-600 px-4 py-3 font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
+    >
+      ✨ Optimize Listing
+    </button>
+
+    <button
+      type="button"
+      onClick={() => handlePublishClick()}
+      disabled={publishing || generating || loading}
+      className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+    >
+      🚀 Publish to eBay
+    </button>
+  </div>
+</div>
         </section>
       )}
     </main>
