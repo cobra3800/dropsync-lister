@@ -8,34 +8,34 @@ datasource db {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  name         String
-  passwordHash String
-  role         String       @default("MEMBER")
-  memberships  Membership[]
-  auditLogs    AuditLog[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String
+  passwordHash  String
+  role          String         @default("MEMBER")
+  memberships   Membership[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   listingDrafts ListingDraft[]
 }
 
 model Organization {
-  id          String       @id @default(cuid())
-  name        String
-  memberships Membership[]
-  stores Store[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id            String         @id @default(cuid())
+  name          String
+  memberships   Membership[]
+  stores        Store[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   listingDrafts ListingDraft[]
 }
 
 model Membership {
-  id             String       @id @default(cuid())
+  id             String   @id @default(cuid())
   userId         String
   organizationId String
-  role           String       @default("MEMBER")
-  createdAt      DateTime     @default(now())
+  role           String   @default("MEMBER")
+  createdAt      DateTime @default(now())
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -57,12 +57,16 @@ model Store {
   id             String       @id @default(cuid())
   organizationId String
   organization   Organization @relation(fields: [organizationId], references: [id])
-  ebayAccount EbayAccount?
-  name        String
-  marketplace String
-  status      String @default("CONNECTED")
+  ebayAccount    EbayAccount?
+  name           String
+  marketplace    String
+  status         String       @default("CONNECTED")
 
-  listingDrafts ListingDraft[]
+  listingDrafts  ListingDraft[]
+  publishHistory PublishHistory[]
+  importQueue    ImportQueue[]
+  importHistory  ImportHistory[]
+  listings       Listing[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -71,15 +75,15 @@ model Store {
 model ListingDraft {
   id             String  @id @default(cuid())
   organizationId String
-  storeId         String?
-  createdById     String
+  storeId        String?
+  createdById    String
 
   title           String
   description     String
   keywords        String
   itemSpecifics   String
   priceSuggestion Float?
-  status          String  @default("DRAFT")
+  status          String @default("DRAFT")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   store        Store?       @relation(fields: [storeId], references: [id], onDelete: SetNull)
@@ -90,10 +94,10 @@ model ListingDraft {
 }
 
 model EbayAccount {
-  id           String   @id @default(cuid())
-  storeId      String   @unique
+  id           String    @id @default(cuid())
+  storeId      String    @unique
   ebayUserId   String?
-  environment  String   @default("sandbox")
+  environment  String    @default("sandbox")
   accessToken  String?
   refreshToken String?
   expiresAt    DateTime?
@@ -104,4 +108,82 @@ model EbayAccount {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model PublishHistory {
+  id         String  @id @default(cuid())
+  storeId    String
+  title      String
+  ebayItemId String?
+  status     String
+  error      String?
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([storeId])
+  @@index([status])
+}
+
+model ImportQueue {
+  id String @id @default(cuid())
+
+  storeId String
+
+  supplierUrl String
+
+  status   String @default("PENDING")
+  progress Int    @default(0)
+
+  title String?
+  error String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@index([status])
+}
+
+model ImportHistory {
+  id          String   @id @default(cuid())
+  storeId     String
+  supplierUrl String
+  title       String?
+  marketplace String   @default("EBAY")
+  status      String   @default("COMPLETED")
+  error       String?
+  createdAt   DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Listing {
+  id          String   @id @default(cuid())
+  storeId     String
+  title       String
+  sku         String?
+  price       Float?
+  quantity    Int      @default(1)
+  marketplace String   @default("EBAY")
+  status      String   @default("ACTIVE")
+  imageUrl    String?
+  externalId  String?
+  externalUrl String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@index([marketplace])
+  @@index([status])
+  @@index([createdAt])
 }

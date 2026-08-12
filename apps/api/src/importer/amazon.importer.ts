@@ -49,14 +49,15 @@ const images = Array.from(
 
     return [value];
   })
-  .filter((src): src is string => src.startsWith('http'))
-  .filter((src) => !src.includes('sprite'))
-  .filter((src) => !src.includes('icon'))
-  .filter((src) => !src.includes('logo'))
-  .filter((src) => !src.includes('marketing'))
-  .filter((src) => !src.includes('Prime'))
-  .filter((src, index, list) => list.indexOf(src) === index)
-  .slice(0, 8);
+  .filter((src) => src.startsWith('http'))
+.filter((src) => !src.includes('sprite'))
+.filter((src) => !src.includes('icon'))
+.filter((src) => !src.includes('logo'))
+.filter((src) => !src.includes('marketing'))
+.filter((src) => !src.includes('Prime'))
+.filter((src) => !src.includes('transparent-pixel'))
+.filter((src, index, list) => list.indexOf(src) === index)
+.slice(0, 8);
 
 const title =
   $('#productTitle').text().trim() ||
@@ -64,15 +65,15 @@ const title =
   'Unknown Product';
 
     return {
-      title,
-      brand: '',
-      price,
-      currency: 'USD',
-      description: '',
-      features: [],
-      images,
-      category: '',
-      specifications: {},
-    };
+  title,
+  brand: '',
+  price,
+  currency: 'USD',
+  description: '',
+  features: [],
+  images,
+  category: '',
+  specifications: {},
+};
   }
 }

@@ -6,6 +6,7 @@ import {
 
 import { EbayService } from './ebay.service.js';
 import { EbayAccountRepository } from './repositories/ebay-account.repository.js';
+import { PublishHistoryService } from '../publish-history/publish-history.service.js';
 
 export type CreateOfferInput = {
   storeId: string;
@@ -27,6 +28,7 @@ export class OfferService {
   constructor(
     private readonly ebayAccountRepository: EbayAccountRepository,
     private readonly ebayService: EbayService,
+    private readonly publishHistoryService: PublishHistoryService,
   ) {}
 
   async createOffer(input: CreateOfferInput) {
@@ -119,21 +121,34 @@ export class OfferService {
     }),
   },
 );
+const responseText = (await response.text()).trim();
 
-const ebayResult = await response.json();
+let ebayResult: Record<string, any> = {};
+
+if (responseText) {
+  try {
+    ebayResult = JSON.parse(responseText);
+  } catch {
+    console.error('Invalid eBay create-offer response:', responseText);
+    throw new BadRequestException(
+      'eBay returned an invalid create-offer response',
+    );
+  }
+}
 
 if (!response.ok) {
-  throw new BadRequestException({
-    message: 'Unable to create eBay offer',
-    ebayError: ebayResult,
-  });
+  console.error('eBay create-offer failed:', ebayResult);
+  throw new BadRequestException(ebayResult);
 }
+
+console.log('eBay create-offer succeeded:', ebayResult);
 
 return ebayResult;
 }
 async publishOffer(input: {
   storeId: string;
   offerId: string;
+  title?: string;
 }) {
   const account =
     await this.ebayAccountRepository.findByStore(input.storeId);
@@ -155,13 +170,32 @@ async publishOffer(input: {
     },
   );
 
-  const ebayResult = await response.json();
+  const responseText = await response.text();
 
-  if (!response.ok) {
-    throw new BadRequestException(ebayResult);
-  }
+const ebayResult = responseText
+  ? JSON.parse(responseText)
+  : {};
 
-  return ebayResult;
+if (!response.ok) {
+  console.error('eBay publish failed:', ebayResult);
+  throw new BadRequestException(ebayResult);
+}
+
+console.log('eBay publish succeeded:', ebayResult);
+
+const listingId =
+  typeof ebayResult.listingId === 'string'
+    ? ebayResult.listingId
+    : undefined;
+
+await this.publishHistoryService.create({
+  storeId: input.storeId,
+  title: input.title ?? `eBay offer ${input.offerId}`,
+  ebayItemId: listingId,
+  status: 'SUCCESS',
+});
+
+return ebayResult;
 }
 }
 

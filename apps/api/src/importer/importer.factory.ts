@@ -12,18 +12,25 @@ export class ImporterFactory {
   ) {}
 
   getImporter(url: string) {
-    if (url.includes('amazon.com')) {
-      return this.amazonImporter;
-    }
+  const hostname = new URL(url).hostname;
 
-    if (url.includes('walmart.com')) {
-      return this.walmartImporter;
-    }
-
-    if (url.includes('aliexpress.com')) {
-      return this.aliexpressImporter;
-    }
-
-    throw new BadRequestException('Unsupported supplier');
+  if (url.includes('amazon.com')) {
+    return this.amazonImporter;
   }
+
+  if (url.includes('walmart.com')) {
+    return this.walmartImporter;
+  }
+
+  if (
+    hostname === 'aliexpress.com' ||
+    hostname.endsWith('.aliexpress.com') ||
+    hostname === 'aliexpress.us' ||
+    hostname.endsWith('.aliexpress.us')
+  ) {
+    return this.aliexpressImporter;
+  }
+
+  throw new BadRequestException('Unsupported supplier');
+}
 }

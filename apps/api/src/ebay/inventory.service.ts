@@ -7,9 +7,11 @@ import { EbayService } from './ebay.service.js';
 import { EbayAccountRepository } from './repositories/ebay-account.repository.js';
 import type { CreateLocationInput } from './location.dto.js';
 import { AspectMapperService } from '../ai/aspect-mapper.service.js';
+import { AspectsService } from './aspects.service.js';
 
 export type CreateInventoryItemInput = {
   storeId: string;
+  categoryId?: string;
   sku: string;
   title: string;
   description: string;
@@ -27,11 +29,13 @@ export class InventoryService {
   private readonly ebayAccountRepository: EbayAccountRepository,
   private readonly ebayService: EbayService,
   private readonly aspectMapper: AspectMapperService,
+  private readonly aspectsService: AspectsService,
 ) {}
 
   async createInventoryItem(input: CreateInventoryItemInput) {
     const {
   storeId,
+  categoryId,
   sku,
   title,
   description,
@@ -75,22 +79,138 @@ let accessToken = account.accessToken;
         await this.ebayService.refreshAccessToken(storeId);
     }
 
- const mappedAspects = await this.aspectMapper.map(
-  title,
-  description,
-  Object.keys(aspects ?? {}),
+ let requiredAspectNames = Object.keys(aspects ?? {});
+
+let categoryAspects: Array<{
+  name: string;
+  required: boolean;
+  usage: string;
+  cardinality: string;
+  values: string[];
+}> = [];
+
+if (categoryId) {
+  categoryAspects =
+    await this.aspectsService.getCategoryAspects(
+      storeId,
+      categoryId,
+    );
+    const typeAspect = categoryAspects.find(
+  (aspect) => aspect.name.toLowerCase() === 'type',
 );
 
+console.log(
+  'EBAY TYPE ASPECT:',
+  JSON.stringify(typeAspect, null, 2),
+);
+if (
+  typeAspect &&
+  typeAspect.values.length > 0 &&
+  !requiredAspectNames.some(
+    (name) => name.toLowerCase() === 'type',
+  )
+) {
+  requiredAspectNames.push('Type');
+}
+  const taxonomyRequiredNames = categoryAspects
+    .filter(
+      (aspect) =>
+        aspect.required &&
+        aspect.name.trim().length > 0,
+    )
+    .map((aspect) => aspect.name);
+
+  requiredAspectNames = Array.from(
+    new Set([
+      ...taxonomyRequiredNames,
+      ...requiredAspectNames,
+    ]),
+  );
+}
+
+const mappedAspects = await this.aspectMapper.map(
+  title,
+  description,
+  requiredAspectNames,
+);
+console.log(
+  'MAPPED ASPECTS:',
+  JSON.stringify(mappedAspects, null, 2),
+);
+const normalizedAspects: Record<string, string[]> = {};
+
+for (const [aspectName, rawValues] of Object.entries(
+  mappedAspects,
+)) {
+  const categoryAspect = categoryAspects.find(
+    (aspect) =>
+      aspect.name.toLowerCase() ===
+      aspectName.toLowerCase(),
+  );
+
+  const cleanedValues = rawValues
+  .map((value) => value.trim())
+  .filter(Boolean)
+  .map((value) =>
+    value.length > 65
+      ? value.slice(0, 65).trim()
+      : value,
+  );
+
+  if (cleanedValues.length === 0) {
+    continue;
+  }
+
+  if (!categoryAspect) {
+    normalizedAspects[aspectName] = [
+      cleanedValues[0],
+    ];
+    continue;
+  }
+
+  let validValues = cleanedValues;
+
+  if (categoryAspect.values.length > 0) {
+    validValues = cleanedValues.filter((value) =>
+      categoryAspect.values.some(
+        (allowedValue) =>
+          allowedValue.toLowerCase() ===
+          value.toLowerCase(),
+      ),
+    );
+
+    if (validValues.length === 0) {
+      continue;
+    }
+  }
+
+  if (categoryAspect.cardinality === 'MULTI') {
+    normalizedAspects[aspectName] =
+      validValues.slice(0, 30);
+  } else {
+    normalizedAspects[aspectName] = [
+      validValues[0],
+    ];
+  }
+}
+console.log(
+  'NORMALIZED ASPECTS:',
+  JSON.stringify(normalizedAspects, null, 2),
+);
 const product: Record<string, unknown> = {
   title,
   description,
-  aspects:
-    Object.keys(mappedAspects).length > 0
-      ? mappedAspects
-      : {
-          Brand: [brand || 'Unbranded'],
-          MPN: [mpn || 'Does Not Apply'],
-        },
+  aspects: {
+  ...normalizedAspects,
+  Brand:
+    normalizedAspects.Brand?.length
+      ? normalizedAspects.Brand
+      : [brand || 'Unbranded'],
+  MPN:
+    normalizedAspects.MPN?.length
+      ? normalizedAspects.MPN
+      : [mpn || 'Does Not Apply'],
+},
 };
 
     if (imageUrls.length > 0) {

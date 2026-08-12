@@ -9,10 +9,12 @@ import { OfferService } from './offer.service.js';
 import { TaxonomyService } from './taxonomy.service.js';
 import { AspectsService } from './aspects.service.js';
 import { AiModule } from '../ai/ai.module.js';
+import { PublishHistoryModule } from '../publish-history/publish-history.module.js';
 
 @Module({
   imports: [
     AiModule,
+    PublishHistoryModule,
   ],
   controllers: [EbayController],
   providers: [

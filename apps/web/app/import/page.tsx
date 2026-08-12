@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Product = {
   source?: string;
@@ -25,82 +25,97 @@ type Listing = {
   shippingWeight?: string;
 };
 
-type EbayPolicy = {
-  fulfillmentPolicyId?: string;
-  paymentPolicyId?: string;
-  returnPolicyId?: string;
-};
-
-type EbayPolicies = {
-  fulfillmentPolicies?: EbayPolicy[];
-  paymentPolicies?: EbayPolicy[];
-  returnPolicies?: EbayPolicy[];
-};
-
 type Store = {
   id: string;
-  name?: string;
+  ebayAccount?: unknown;
 };
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+type QueueItem = {
+  id?: string;
+  supplierUrl?: string;
+  title?: string;
+  status?: string;
+  progress?: number;
+  error?: string | null;
+};
+
+type PublishResult = {
+  queued?: boolean;
+  queueId?: string;
+  status?: string;
+  listingId?: string;
+};
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+
+async function readJson(response: Response): Promise<unknown> {
+  const text = await response.text();
+  if (!text.trim()) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('The server returned an invalid response.');
+  }
+}
+
+function messageFrom(data: unknown, fallback: string): string {
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'message' in data &&
+    typeof (data as { message?: unknown }).message === 'string'
+  ) {
+    return (data as { message: string }).message;
+  }
+
+  return fallback;
+}
 
 export default function ImportPage() {
   const [url, setUrl] = useState('');
   const [storeId, setStoreId] = useState('');
-
   const [product, setProduct] = useState<Product | null>(null);
   const [listing, setListing] = useState<Listing | null>(null);
-  const [policies, setPolicies] = useState<EbayPolicies | null>(null);
-
+  const [queue, setQueue] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [publishing, setPublishing] = useState(false);
-
+  const [queueLoading, setQueueLoading] = useState(false);
   const [publishStep, setPublishStep] = useState('');
-  const [publishResult, setPublishResult] = useState<any>(null);
+  const [publishResult, setPublishResult] = useState<PublishResult | null>(null);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    void loadQueue();
+  }, []);
 
   async function importProduct() {
     const cleanUrl = url.trim();
-
     if (!cleanUrl) {
       setError('Please enter a product URL.');
       return;
     }
 
+    setLoading(true);
     setError('');
     setProduct(null);
     setListing(null);
     setPublishResult(null);
     setPublishStep('');
-    setLoading(true);
 
     try {
       const response = await fetch(`${API_URL}/importer/product`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: cleanUrl,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: cleanUrl }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message ?? 'Product import failed');
-      }
-
-      setProduct(data);
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Product import failed',
-      );
+      const data = await readJson(response);
+      if (!response.ok) throw new Error(messageFrom(data, 'Product import failed'));
+      setProduct(data as Product);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Product import failed');
     } finally {
       setLoading(false);
     }
@@ -108,423 +123,350 @@ export default function ImportPage() {
 
   async function generateListing() {
     if (!product) {
-      setError('Import a product before generating a listing.');
+      setError('Import a product first.');
       return;
     }
 
-    setError('');
-    setListing(null);
     setGenerating(true);
+    setError('');
 
     try {
       const response = await fetch(`${API_URL}/ai/generate-listing`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: url.trim(),
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url.trim() }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message ?? 'AI generation failed');
-      }
-
-      setListing(data);
-    } catch (caughtError) {
-      setError(
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'AI generation failed',
-      );
+      const data = await readJson(response);
+      if (!response.ok) throw new Error(messageFrom(data, 'AI generation failed'));
+      setListing(data as Listing);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'AI generation failed');
     } finally {
       setGenerating(false);
     }
   }
-    async function createDefaultStore() {
-  const response = await fetch(`${API_URL}/stores`, {
-    method: 'POST',
+
+  async function loadStoreId(): Promise<string> {
+
+const response = await fetch(`${API_URL}/stores`, {
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      name: 'My eBay Store',
-      marketplace: 'EBAY_US',
-      organizationId: 'owner-org',
-    }),
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message ?? 'Unable to create store');
-  }
-
-  setStoreId(data.id);
-
-  return data;
-}
-
-  async function loadStoreId() {
-  const response = await fetch(`${API_URL}/stores`, {
-    credentials: 'include',
-  });
-
-  const data = await response.json();
-  async function loadStoreId() {
-  const response = await fetch(`${API_URL}/stores`, {
-    credentials: 'include',
-  });
-
-  const data = await response.json();
-
-  console.log('Stores returned by API:', data);
-
-  if (!response.ok) {
-    throw new Error(data.message ?? 'Unable to load stores');
-  }
-
-  // Keep the remaining connectedStore code here
-}
-
-  if (!response.ok) {
-    throw new Error(data.message ?? 'Unable to load stores');
-  }
-
-  if (!Array.isArray(data) || data.length === 0) {
-    throw new Error('No store was found for this account');
-  }
-
-  const connectedStore =
-    data.find((store: Store & { ebayAccount?: unknown }) =>
-      Boolean(store.ebayAccount),
-    ) ?? null;
-
-  if (!connectedStore?.id) {
-    throw new Error(
-      'No eBay-connected store was found. Reconnect your eBay account.',
-    );
-  }
-
-  console.log('Using connected eBay store:', connectedStore);
-
-  setStoreId(connectedStore.id);
-
-  return connectedStore.id as string;
-}
-
-  async function loadPolicies(activeStoreId: string) {
-    const cleanStoreId = activeStoreId.trim();
-
-    if (!cleanStoreId) {
-      throw new Error('Store ID is required');
+});
+    const data = await readJson(response);
+    if (!response.ok) throw new Error(messageFrom(data, 'Unable to load stores'));
+    if (!Array.isArray(data) || data.length === 0) {
+      throw new Error('No store was found for this account.');
     }
 
-    const response = await fetch(
-      `${API_URL}/ebay/policies?storeId=${encodeURIComponent(cleanStoreId)}`,
-      {
-        credentials: 'include',
-      },
-    );
+    const stores = data as Store[];
+    const connected = stores.find((store) => Boolean(store.ebayAccount)) ?? stores[0];
+    if (!connected?.id) throw new Error('No connected eBay store was found.');
 
-    const data = await response.json();
-
-if (!response.ok) {
-  throw new Error(data.message ?? 'Unable to load stores');
-}
-
-    setPolicies(data);
-
-return data as EbayPolicies;
-}
-
-async function handleAutoListClick() {
-  if (!product || !listing) {
-    setError('Import a product and generate a listing first.');
-    return;
+    setStoreId(connected.id);
+    return connected.id;
   }
 
-  setError('');
-  setPublishing(true);
-  setPublishStep('Optimizing listing...');
-
-  try {
-    const optimizedListing = await handleOptimizeClick();
-
-if (!optimizedListing) {
-  throw new Error('Unable to optimize listing');
-}
-
-setPublishStep('Publishing optimized listing to eBay...');
-
-await handlePublishClick(optimizedListing);
-  } catch (error) {
-  setError(
-    error instanceof Error
-      ? error.message
-      : 'Unable to optimize listing',
-  );
-
-  return null;
-} finally {
-  setGenerating(false);
-}
-}
-
-async function handleOptimizeClick() {
-
-  if (!product || !listing ) {
-    setError('Import a product and generate an AI listing first.');
-    return;
+  async function loadQueue() {
+    setQueueLoading(true);
+    try {
+      const response = await fetch(`${API_URL}/importer/queue`, {
+  credentials: 'include',
+  cache: 'no-store',
+});
+      const data = await readJson(response);
+      if (response.ok && Array.isArray(data)) setQueue(data as QueueItem[]);
+    } catch (caught) {
+      console.error('Unable to load queue:', caught);
+    } finally {
+      setQueueLoading(false);
+    }
   }
 
-  setGenerating(true);
-  setError('');
+  async function handleAutoListClick() {
+    console.log('AUTO LIST CLICKED');
+    if (!product) {
+      setError('Import a product first.');
+      return;
+    }
 
-  try {
-    const response = await fetch(
-      `${API_URL}/ai/optimize-listing`,
-      {
+    setPublishing(true);
+    setError('');
+    setPublishStep('Adding product to import queue...');
+    setPublishResult(null);
+
+    try {
+      const activeStoreId = storeId || (await loadStoreId());
+      const response = await fetch(`${API_URL}/importer/queue`, {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          product,
-          listing,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeId: activeStoreId, supplierUrl: url.trim() }),
+      });
+      const data = await readJson(response);
+      if (!response.ok) throw new Error(messageFrom(data, 'Unable to add product to queue'));
+
+      const item = data as QueueItem;
+
+setPublishResult({
+  queued: true,
+  queueId: item.id,
+  status: item.status,
+});
+
+setPublishStep('');
+await loadQueue();
+} catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to add product to queue');
+      setPublishStep('');
+    } finally {
+      setPublishing(false);
+    }
+  }
+  async function deleteQueueItem(id?: string) {
+  if (!id) {
+    setError('Queue item ID is missing.');
+    return;
+  }
+
+  const confirmed = window.confirm('Delete this queue job?');
+
+  if (!confirmed) {
+    return;
+  }
+
+  try {
+    setError('');
+
+    const response = await fetch(
+      `${API_URL}/importer/queue/${encodeURIComponent(id)}`,
+      {
+        method: 'DELETE',
+        credentials: 'include',
       },
     );
 
-    const result = await response.json();
+    const data = await readJson(response);
 
     if (!response.ok) {
       throw new Error(
-        result.message ?? 'Unable to optimize listing',
+        messageFrom(data, 'Unable to delete queue item'),
       );
     }
 
-    const optimizedListing = {
-  ...listing,
-  ...result,
-};
+    setQueue((currentQueue) =>
+      currentQueue.filter((job) => job.id !== id),
+    );
+  } catch (caught) {
+    setError(
+      caught instanceof Error
+        ? caught.message
+        : 'Unable to delete queue item',
+    );
+  }
+}
 
-setListing(optimizedListing);
-
-return optimizedListing;
-} catch (error) {
-  setError(
-    error instanceof Error
-      ? error.message
-      : 'Unable to optimize listing',
+async function clearCompletedQueue() {
+  const confirmed = window.confirm(
+    'Delete all completed queue jobs?',
   );
 
-  return null;
-} finally {
-  setGenerating(false);
-}
-}
-
-async function handlePublishClick(
-  listingOverride?: Listing,
-) {
-  const listingToPublish = listingOverride ?? listing;
-
-  if (!product || !listingToPublish) {
-    setError('Import a product and generate an AI listing first.');
+  if (!confirmed) {
     return;
   }
 
-  setPublishing(true);
-  setError('');
-  setPublishResult(null);
-  setPublishStep('Loading connected store...');
-
   try {
+    setError('');
+
+    const response = await fetch(
+      `${API_URL}/importer/queue/completed`,
+      {
+        method: 'DELETE',
+        credentials: 'include',
+      },
+    );
+
+    const data = await readJson(response);
+
+    if (!response.ok) {
+      throw new Error(
+        messageFrom(data, 'Unable to clear completed jobs'),
+      );
+    }
+
+    setQueue((currentQueue) =>
+      currentQueue.filter((job) => job.status !== 'COMPLETED'),
+    );
+  } catch (caught) {
+    setError(
+      caught instanceof Error
+        ? caught.message
+        : 'Unable to clear completed jobs',
+    );
+  }
+}
+
+  async function handleOptimizeClick() {
+    if (!product || !listing) {
+      setError('Import a product and generate a listing first.');
+      return;
+    }
+
+    setGenerating(true);
+    setError('');
+    try {
+      const response = await fetch(`${API_URL}/ai/optimize-listing`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ product, listing }),
+      });
+      const data = await readJson(response);
+      if (!response.ok) throw new Error(messageFrom(data, 'Unable to optimize listing'));
+      setListing({ ...listing, ...(data as Listing) });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to optimize listing');
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function handlePublishClick() {
+    if (!product || !listing) {
+      setError('Import a product and generate a listing first.');
+      return;
+    }
+
+    setPublishing(true);
+    setError('');
+    setPublishResult(null);
+    setPublishStep('Publishing listing to eBay...');
+
+    try {
       const activeStoreId = storeId || (await loadStoreId());
-      const sku = `dropsync-${Date.now()}`;
 
-      setPublishStep('Loading eBay policies...');
-
-const activePolicies =
-  policies ?? (await loadPolicies(activeStoreId));
-
-const fulfillmentData =
-  activePolicies.fulfillmentPolicies as unknown as {
-    total: number;
-    fulfillmentPolicies: Array<{
-      fulfillmentPolicyId: string;
-    }>;
-  };
-
-const paymentData =
-  activePolicies.paymentPolicies as unknown as {
-    total: number;
-    paymentPolicies: Array<{
-      paymentPolicyId: string;
-    }>;
-  };
-
-const returnData =
-  activePolicies.returnPolicies as unknown as {
-    total: number;
-    returnPolicies: Array<{
-      returnPolicyId: string;
-    }>;
-  };
-
-const fulfillmentPolicyId =
-  fulfillmentData.fulfillmentPolicies?.[0]?.fulfillmentPolicyId ?? '';
-
-const paymentPolicyId =
-  paymentData.paymentPolicies?.[0]?.paymentPolicyId ?? '';
-
-const returnPolicyId =
-  returnData.returnPolicies?.[0]?.returnPolicyId ?? '';
-
-console.log('Active policies:', activePolicies);
-
-console.log('Policy IDs:', {
-  fulfillmentPolicyId,
-  paymentPolicyId,
-  returnPolicyId,
-});
-
-if (!fulfillmentPolicyId || !paymentPolicyId || !returnPolicyId) {
-  throw new Error(
-    'Missing eBay business policies. Create fulfillment, payment, and return policies in the connected eBay seller account.',
-  );
-}
-
-setPublishStep('Creating inventory item...');
-
-      const inventoryResponse = await fetch(
-        `${API_URL}/ebay/inventory-item`,
-        {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            storeId: activeStoreId,
-            sku,
-            title: listingToPublish.title ?? product.title ?? 'Product',
-description: listingToPublish.description ?? product.description,
-            quantity: 1,
-            condition: 'NEW',
-            imageUrls: product.images ?? [],
-            aspects: {
-  Brand: [
-    String(
-      listingToPublish.itemSpecifics?.Brand ??
-        product.brand ??
-        'NIAKUN',
-    ),
-  ],
-
-  Processor: [
-    String(
-      listingToPublish.itemSpecifics?.Processor ??
-        'Intel Pentium Gold 4425Y',
-    ),
-  ],
-
-  'Screen Size': [
-    String(
-      listingToPublish.itemSpecifics?.['Screen Size'] ??
-        '15.6 in',
-    ),
-  ],
-
-  Type: ['Notebook/Laptop'],
-},
-    }),
-  },
-);
-
-const inventoryResult = await inventoryResponse.json();
-
-if (!inventoryResponse.ok) {
-  throw new Error(
-    inventoryResult.message ?? 'Unable to create inventory item',
-  );
-}
-
-setPublishStep('Finding the best eBay category...');
+setPublishStep('Finding best eBay category...');
 
 const categoryResponse = await fetch(
   `${API_URL}/ebay/category-suggestions?storeId=${encodeURIComponent(
     activeStoreId,
-  )}&title=${encodeURIComponent(
-    listingToPublish.title ?? product.title ?? 'Product',
-  )}`,
+  )}&title=${encodeURIComponent(listing.title || product.title || '')}`,
   {
     credentials: 'include',
   },
 );
-const categorySuggestions = await categoryResponse.json();
+
+const categoryData = await readJson(categoryResponse);
 
 if (!categoryResponse.ok) {
   throw new Error(
-    categorySuggestions.message ?? 'Unable to find an eBay category',
+    messageFrom(categoryData, 'Unable to find eBay category'),
   );
 }
 
-const suggestedCategoryId =
-  categorySuggestions?.[0]?.category?.categoryId;
+const suggestions = Array.isArray(categoryData)
+  ? categoryData
+  : [categoryData];
 
-if (!suggestedCategoryId) {
-  throw new Error('eBay did not return a suggested category');
-}
+const productText = [
+  listing.title,
+  product.title,
+  listing.category,
+  product.category,
+  ...Object.keys(listing.itemSpecifics ?? {}),
+  ...Object.values(listing.itemSpecifics ?? {}).map(String),
+]
+  .filter(Boolean)
+  .join(' ')
+  .toLowerCase();
+
+const selectedSuggestion =
+  [...suggestions]
+    .map((suggestion) => {
+      const categoryNames = [
+  suggestion?.category?.categoryName,
+  suggestion?.categoryName,
+  ...(suggestion?.categoryTreeNodeAncestors ?? []).map(
+    (ancestor: { categoryName?: string }) => ancestor.categoryName,
+  ),
+]
+  .filter(Boolean)
+  .join(' ')
+  .toLowerCase();
+
+const words = categoryNames
+  .split(/[^a-z0-9]+/)
+  .filter(
+    (word) =>
+      word.length > 2 &&
+      !['other', 'and', 'the', 'for'].includes(word),
+  );
+
+      const strongWords = [
+  'camping',
+  'hiking',
+  'outdoor',
+  'sports',
+  'sporting',
+  'altitude',
+  'travel',
+  'fitness',
+  'recovery',
+];
+
+const score = words.reduce((total, word) => {
+  if (!productText.includes(word)) {
+    return total;
+  }
+
+  return total + (strongWords.includes(word) ? 5 : 1);
+}, 0);
+
+      return { suggestion, score };
+    })
+    .sort((a, b) => b.score - a.score)[0]?.suggestion ??
+  suggestions[0];
 
 console.log(
-  'Suggested category:',
-  suggestedCategoryId,
-);
-setPublishStep('Loading eBay item specifics...');
-
-const aspectsResponse = await fetch(
-  `${API_URL}/ebay/category-aspects?storeId=${encodeURIComponent(
-    activeStoreId,
-  )}&categoryId=${encodeURIComponent(suggestedCategoryId)}`,
-  {
-    credentials: 'include',
-  },
+  'SELECTED EBAY CATEGORY:',
+  JSON.stringify(selectedSuggestion, null, 2),
 );
 
-const categoryAspects = await aspectsResponse.json();
+const categoryId = String(
+  selectedSuggestion?.categoryId ??
+    selectedSuggestion?.category?.categoryId ??
+    '',
+).trim();
 
-if (!aspectsResponse.ok) {
-  throw new Error(
-    categoryAspects.message ?? 'Unable to load eBay item specifics',
-  );
+if (!categoryId) {
+  throw new Error('eBay did not return a category ID.');
 }
 
-const requiredAspects = categoryAspects.filter(
-  (aspect: { required?: boolean }) => aspect.required === true,
-);
+const aspects: Record<string, string[]> = {};
 
-console.log('Required eBay aspects:', requiredAspects);
-      setPublishStep('Creating eBay offer...');
+for (const [name, value] of Object.entries(
+  listing.itemSpecifics ?? {},
+)) {
+  if (
+  name.toLowerCase() !== 'condition' &&
+  typeof value === 'string' &&
+  value.trim()
+) {
+    aspects[name] = [value.trim()];
+  }
+}
 
-const rawOfferPrice = Number(listingToPublish.price?? product.price ?? 0);
+const price = Number(listing.price ?? product.price ?? 0);
 
-const offerPrice =
-  Number.isFinite(rawOfferPrice) && rawOfferPrice > 0
-    ? rawOfferPrice
-    : 19.99;
+if (!Number.isFinite(price) || price <= 0) {
+  throw new Error('A valid selling price is required.');
+}
 
-console.log('Offer price being sent:', offerPrice);
+const sku = `DS-${Date.now()}`;
 
-const offerResponse = await fetch(
-  `${API_URL}/ebay/create-offer`,
+setPublishStep('Creating and publishing eBay listing...');
+
+const response = await fetch(
+  `${API_URL}/ebay/publish-ai-listing`,
   {
     method: 'POST',
     credentials: 'include',
@@ -534,67 +476,26 @@ const offerResponse = await fetch(
     body: JSON.stringify({
       storeId: activeStoreId,
       sku,
-      marketplaceId: 'EBAY_US',
-      format: 'FIXED_PRICE',
-      availableQuantity: 1,
-      categoryId: suggestedCategoryId,
-      merchantLocationKey: 'main',
-      price: offerPrice,
-      currency: 'USD',
-      fulfillmentPolicyId,
-      paymentPolicyId,
-      returnPolicyId,
+      title: listing.title || product.title || 'Untitled Product',
+      description:
+        listing.description ?? product.description ?? '',
+      price,
+      quantity: 1,
+      categoryId,
+      condition: listing.condition || 'NEW',
+      imageUrls: product.images ?? [],
+      brand: product.brand ?? '',
+      mpn: '',
+      aspects,
     }),
   },
 );
-
-const offerResult = await offerResponse.json();
-
-      if (!offerResponse.ok) {
-        throw new Error(
-          offerResult.message ?? 'Unable to create eBay offer',
-        );
-      }
-
-      if (!offerResult.offerId) {
-        throw new Error('eBay did not return an offer ID');
-      }
-
-      setPublishStep('Publishing offer to eBay...');
-
-      const publishResponse = await fetch(
-        `${API_URL}/ebay/publish-offer`,
-        {
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            storeId: activeStoreId,
-            offerId: offerResult.offerId,
-          }),
-        },
-      );
-
-      const result = await publishResponse.json();
-
-      if (!publishResponse.ok) {
-        throw new Error(
-          result.message ?? 'Unable to publish eBay offer',
-        );
-      }
-
-      setPublishResult(result);
+      const data = await readJson(response);
+      if (!response.ok) throw new Error(messageFrom(data, 'Unable to publish listing'));
+      setPublishResult(data as PublishResult);
       setPublishStep('Published successfully!');
-    } catch (caughtError) {
-      const message =
-        caughtError instanceof Error
-          ? caughtError.message
-          : 'Unable to publish listing';
-
-      console.error(caughtError);
-      setError(message);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to publish listing');
       setPublishStep('');
     } finally {
       setPublishing(false);
@@ -602,269 +503,221 @@ const offerResult = await offerResponse.json();
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 p-10 text-white">
-      <h1 className="text-5xl font-bold">
-        AI Product Importer
-      </h1>
+    <main className="min-h-screen bg-slate-950 p-6 text-white md:p-10">
+      <div className="mx-auto max-w-4xl">
+        <h1 className="text-4xl font-bold">AI Product Importer</h1>
+        <p className="mt-3 text-slate-300">
+          Paste a supplier URL to import a product and create an eBay listing.
+        </p>
 
-      <p className="mt-3 text-slate-300">
-        Paste any supplier URL to generate an eBay listing.
-      </p>
-
-      <div className="mt-10 max-w-3xl">
         <input
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          placeholder="https://www.amazon.com/..."
-          autoComplete="off"
-          style={{
-            color: 'white',
-            WebkitTextFillColor: 'white',
-            caretColor: 'white',
-          }}
-          className="w-full rounded-xl border border-slate-700 bg-slate-900 p-4 text-white placeholder:text-slate-400"
-        />
-
-        <button
-          type="button"
-          onClick={importProduct}
-          disabled={loading}
-          className="mt-5 w-full rounded-xl bg-blue-600 px-8 py-4 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {loading ? 'Importing...' : 'Import Product'}
-        </button>
-      </div>
-
-      {error && (
-        <div className="mt-6 max-w-3xl rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-red-200">
-          {error}
-        </div>
-      )}
-
-      {product && (
-        <section className="mt-10 max-w-3xl rounded-2xl border border-slate-700 bg-slate-900 p-6">
-          <p className="text-sm font-semibold uppercase tracking-wide text-blue-400">
-            Imported successfully
-          </p>
-
-          <h2 className="mt-3 text-2xl font-bold">
-            {product.title ?? 'Imported Product'}
-          </h2>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-sm text-slate-200">
-                Supplier
-              </p>
-              <p className="font-semibold capitalize">
-                {product.source ?? 'Unknown'}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm text-slate-200">Price</p>
-              <p className="font-semibold">
-                ${Number(product.price ?? 0).toFixed(2)}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm text-slate-200">Brand</p>
-              <p className="font-semibold">
-                {product.brand ?? 'Unknown'}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm text-slate-200">
-                Category
-              </p>
-              <p className="font-semibold">
-                {product.category ?? 'Unknown'}
-              </p>
-            </div>
-          </div>
-
-          {product.images?.[0] && (
-            <div className="mt-6 flex justify-center rounded-xl bg-slate-800 p-4">
-              <img
-                src={product.images[0]}
-                alt={product.title ?? 'Imported product'}
-                className="max-h-64 max-w-full rounded-lg object-contain"
-              />
-            </div>
-          )}
-
+  type="text"
+  value={url}
+  onChange={(event) => setUrl(event.target.value)}
+  placeholder="https://www.walmart.com/..."
+  autoComplete="off"
+  spellCheck={false}
+  style={{
+    color: "white",
+    WebkitTextFillColor: "white",
+    caretColor: "white",
+  }}
+  className="w-full rounded-xl border border-slate-700 bg-slate-900 p-4 text-white placeholder:text-slate-400"
+/>
           <button
             type="button"
-            onClick={generateListing}
-            disabled={generating}
-            className="mt-8 rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={importProduct}
+            disabled={loading}
+            className="mt-6 rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white hover:bg-emerald-700"
           >
-            {generating
-              ? 'Generating...'
-              : 'Generate AI Listing'}
+            {loading ? 'Importing...' : 'Import Product'}
           </button>
-        </section>
-      )}
+        </div>
 
-      {listing && (
-        <section className="mt-10 max-w-3xl rounded-2xl border border-emerald-500/30 bg-slate-900 p-6">
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-400">
-            AI listing generated
-          </p>
-
-          <h2 className="mt-3 text-2xl font-bold">
-            {listing.title ?? 'Generated eBay Listing'}
-          </h2>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-sm text-slate-200">
-                Suggested price
-              </p>
-              <p className="font-semibold">
-                {listing.price ?? '$0.00'}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm text-slate-200">
-                Category
-              </p>
-              <p className="font-semibold">
-                {listing.category ?? 'Unknown'}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm text-slate-200">
-                Condition
-              </p>
-              <p className="font-semibold">
-                {listing.condition ?? 'New'}
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm text-slate-200">
-                Shipping weight
-              </p>
-              <p className="font-semibold">
-                {listing.shippingWeight ?? 'Not provided'}
-              </p>
-            </div>
+        {error && (
+          <div className="mt-6 max-w-3xl rounded-xl border border-red-500/40 bg-red-500/10 p-4 text-red-200">
+            {error}
           </div>
+        )}
 
-          <div className="mt-6">
-            <p className="text-sm text-slate-200">
-              Description
-            </p>
-            <p className="mt-2 whitespace-pre-wrap">
-              {listing.description ??
-                'No description generated.'}
-            </p>
-          </div>
+        {product ? (
+          <section className="mt-8 max-w-3xl rounded-2xl border border-blue-500/30 bg-slate-900 p-6">
+            <p className="text-sm font-semibold uppercase text-blue-400">Imported successfully</p>
+            <h2 className="mt-3 text-2xl font-bold">{product.title ?? 'Imported Product'}</h2>
 
-          {listing.itemSpecifics &&
-            Object.keys(listing.itemSpecifics).length > 0 && (
-              <div className="mt-6">
-                <p className="text-sm text-slate-200">
-                  Item specifics
-                </p>
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <Info label="Supplier" value={product.source ?? 'Unknown'} />
+              <Info label="Price" value={`$${Number(product.price ?? 0).toFixed(2)}`} />
+              <Info label="Brand" value={product.brand ?? 'Unknown'} />
+              <Info label="Category" value={product.category ?? 'Unknown'} />
+            </div>
 
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  {Object.entries(listing.itemSpecifics).map(
-                    ([name, value]) => (
-                      <div
-                        key={name}
-                        className="rounded-lg bg-slate-800 p-3"
-                      >
-                        <p className="text-xs text-slate-300">
-                          {name}
-                        </p>
-                        <p className="font-medium">{value}</p>
-                      </div>
-                    ),
-                  )}
-                </div>
+            {product.images?.[0] ? (
+              <div className="mt-6 flex justify-center rounded-xl bg-slate-950 p-4">
+                <img
+                  src={product.images[0]}
+                  alt={product.title ?? 'Imported product'}
+                  className="max-h-64 max-w-full rounded-lg object-contain"
+                />
               </div>
-            )}
+            ) : null}
 
-          {listing.seoKeywords &&
-            listing.seoKeywords.length > 0 && (
-              <div className="mt-6">
-                <p className="text-sm text-slate-200">
-                  SEO keywords
-                </p>
+            {product.description ? (
+              <p className="mt-6 whitespace-pre-wrap">{product.description}</p>
+            ) : null}
 
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {listing.seoKeywords.map((keyword) => (
-                    <span
-                      key={keyword}
-                      className="rounded-full bg-slate-800 px-3 py-1 text-sm text-white"
-                    >
-                      {keyword}
-                    </span>
-                  ))}
-                </div>
+            <button
+              type="button"
+              onClick={generateListing}
+              disabled={generating}
+              className="mt-6 rounded-xl bg-emerald-600 px-6 py-3 font-semibold disabled:opacity-50"
+            >
+              {generating ? 'Generating...' : 'Generate AI Listing'}
+            </button>
+          </section>
+        ) : null}
+
+        {listing ? (
+          <section className="mt-8 max-w-3xl rounded-2xl border border-emerald-500/30 bg-slate-900 p-6">
+            <p className="text-sm font-semibold uppercase text-emerald-400">AI listing generated</p>
+            <h2 className="mt-3 text-2xl font-bold">{listing.title ?? 'Generated eBay Listing'}</h2>
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2">
+              <Info label="Suggested price" value={listing.price ?? '$0.00'} />
+              <Info label="Category" value={listing.category ?? 'Unknown'} />
+              <Info label="Condition" value={listing.condition ?? 'New'} />
+              <Info label="Shipping weight" value={listing.shippingWeight ?? 'Not provided'} />
+            </div>
+
+            <p className="mt-6 whitespace-pre-wrap">
+              {listing.description ?? 'No description generated.'}
+            </p>
+
+            {listing.itemSpecifics && Object.keys(listing.itemSpecifics).length > 0 ? (
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                {Object.entries(listing.itemSpecifics).map(([name, value]) => (
+                  <Info key={name} label={name} value={value} />
+                ))}
               </div>
-            )}
+            ) : null}
 
-          {publishStep && (
-            <div className="mt-6 rounded-xl border border-blue-500/40 bg-blue-500/10 p-4">
-              <p className="font-semibold text-white">
+            {listing.seoKeywords?.length ? (
+              <div className="mt-6 flex flex-wrap gap-2">
+                {listing.seoKeywords.map((keyword) => (
+                  <span key={keyword} className="rounded-full bg-slate-800 px-3 py-1 text-sm">
+                    {keyword}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
+            {publishStep ? (
+              <div className="mt-6 rounded-xl border border-blue-500/40 bg-blue-500/10 p-4">
                 {publishStep}
-              </p>
+              </div>
+            ) : null}
+
+            {publishResult ? (
+              <div className="mt-6 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4">
+                {publishResult.queued ? 'Product added to queue successfully.' : 'Listing published successfully.'}
+                {publishResult.listingId ? <p className="mt-2">Listing ID: {publishResult.listingId}</p> : null}
+              </div>
+            ) : null}
+
+            <div className="mt-6 space-y-3">
+              <button
+                type="button"
+                onClick={handleAutoListClick}
+                disabled={publishing || generating || loading}
+                className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold disabled:opacity-50"
+              >
+                🤖 Auto List
+              </button>
+
+              <div className="flex gap-4">
+                <button
+                  type="button"
+                  onClick={handleOptimizeClick}
+                  disabled={generating || publishing || loading}
+                  className="flex-1 rounded-lg bg-purple-600 px-4 py-3 font-semibold disabled:opacity-50"
+                >
+                  ✨ Optimize Listing
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePublishClick}
+                  disabled={publishing || generating || loading}
+                  className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold disabled:opacity-50"
+                >
+                  🚀 Publish to eBay
+                </button>
+              </div>
             </div>
-          )}
+          </section>
+        ) : null}
 
-          {publishResult && (
-            <div className="mt-6 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4">
-              <p className="font-semibold text-emerald-200">
-                Listing published successfully.
-              </p>
-
-              {publishResult.listingId && (
-                <p className="mt-2 text-white">
-                  Listing ID: {publishResult.listingId}
-                </p>
-              )}
-            </div>
-          )}
-
-          <div className="mt-6 space-y-3">
+        <section className="mt-8 max-w-3xl rounded-2xl border border-slate-700 bg-slate-900 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold">Import Queue</h2>
+            <div className="flex gap-2">
   <button
     type="button"
-    onClick={handleAutoListClick}
-    disabled={publishing || generating || loading}
-    className="w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700 disabled:opacity-50"
+    onClick={() => void loadQueue()}
+    disabled={queueLoading}
+    className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold disabled:opacity-50"
   >
-    🤖 Auto List
+    {queueLoading ? 'Loading...' : 'Refresh'}
   </button>
 
-  <div className="flex gap-4">
-    <button
-      type="button"
-      onClick={handleOptimizeClick}
-      disabled={generating || publishing || loading}
-      className="flex-1 rounded-lg bg-purple-600 px-4 py-3 font-semibold text-white hover:bg-purple-700 disabled:opacity-50"
-    >
-      ✨ Optimize Listing
-    </button>
-
-    <button
-      type="button"
-      onClick={() => handlePublishClick()}
-      disabled={publishing || generating || loading}
-      className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-    >
-      🚀 Publish to eBay
-    </button>
-  </div>
+  <button
+    type="button"
+    onClick={() => void clearCompletedQueue()}
+    className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700"
+  >
+    🧹 Clear Completed
+  </button>
 </div>
+          </div>
+
+          {queue.length === 0 ? (
+            <p className="mt-4 text-slate-400">No queue jobs yet.</p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {queue.map((job, index) => (
+                <div key={job.id ?? index} className="rounded-xl bg-slate-800 p-4">
+  <p className="font-semibold">
+    {job.title ?? job.supplierUrl ?? 'Queued product'}
+  </p>
+
+  <p className="mt-1 text-sm text-slate-300">
+    {job.status ?? 'UNKNOWN'}
+    {typeof job.progress === 'number' ? ` • ${job.progress}%` : ''}
+  </p>
+
+  {job.error ? (
+    <p className="mt-2 text-sm text-red-300">{job.error}</p>
+  ) : null}
+
+  <button
+    className="mt-3 rounded bg-red-600 px-3 py-1 text-sm font-medium hover:bg-red-700"
+    onClick={() => deleteQueueItem(job.id)}
+  >
+    🗑 Delete
+  </button>
+</div>
+              ))}
+            </div>
+          )}
         </section>
-      )}
     </main>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-slate-800 p-3">
+      <p className="text-sm text-slate-300">{label}</p>
+      <p className="font-semibold">{value}</p>
+    </div>
   );
 }

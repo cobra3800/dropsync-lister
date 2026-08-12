@@ -17,6 +17,7 @@ import type { CreateInventoryItemInput } from './inventory.service.js';
 import type { CreateLocationInput } from './location.dto.js';
 import { TaxonomyService } from './taxonomy.service.js';
 import { AspectsService } from './aspects.service.js';
+import { createHash } from 'node:crypto';
 
 @Controller('ebay')
 export class EbayController {
@@ -116,9 +117,14 @@ async createOffer(
 }
 @Post('publish-offer')
 async publishOffer(
-  @Body() body: { storeId: string; offerId: string },
+  @Body()
+  input: {
+    storeId: string;
+    offerId: string;
+    title?: string;
+  },
 ) {
-  return this.offerService.publishOffer(body);
+  return this.offerService.publishOffer(input);
 }
 @Get('policies')
 async getPolicies(
@@ -169,5 +175,136 @@ async getCategoryAspects(
     storeId,
     categoryId,
   );
+}
+@Post('publish-ai-listing')
+async publishAiListing(
+  @Body()
+  body: {
+    storeId: string;
+    sku: string;
+    title: string;
+    description: string;
+    price: number;
+    quantity: number;
+    categoryId: string;
+    condition?: string;
+    imageUrls?: string[];
+    brand?: string;
+    mpn?: string;
+    aspects?: Record<string, string[]>;
+  },
+) {
+  const inventoryResult =
+    await this.inventoryService.createInventoryItem({
+      storeId: body.storeId,
+      categoryId: body.categoryId,
+      sku: body.sku,
+      title: body.title,
+      description: body.description,
+      quantity: body.quantity,
+      condition: body.condition,
+      imageUrls: body.imageUrls,
+      brand: body.brand,
+      mpn: body.mpn,
+      aspects: body.aspects,
+    });
+    const policies = await this.ebayService.getBusinessPolicies(body.storeId);
+
+const fulfillmentData =
+  policies.fulfillmentPolicies as {
+    fulfillmentPolicies?: Array<{
+      fulfillmentPolicyId?: string;
+    }>;
+  };
+
+const paymentData =
+  policies.paymentPolicies as {
+    paymentPolicies?: Array<{
+      paymentPolicyId?: string;
+    }>;
+  };
+
+const returnData =
+  policies.returnPolicies as {
+    returnPolicies?: Array<{
+      returnPolicyId?: string;
+    }>;
+  };
+
+const fulfillmentPolicyId =
+  fulfillmentData.fulfillmentPolicies?.[0]?.fulfillmentPolicyId ?? "";
+
+const paymentPolicyId =
+  paymentData.paymentPolicies?.[0]?.paymentPolicyId ?? "";
+
+const returnPolicyId =
+  returnData.returnPolicies?.[0]?.returnPolicyId ?? "";
+
+if (!fulfillmentPolicyId || !paymentPolicyId || !returnPolicyId) {
+  throw new BadRequestException(
+    "Missing eBay fulfillment, payment, or return policy.",
+  );
+}
+
+  const offerResult = await this.offerService.createOffer({
+    storeId: body.storeId,
+    sku: body.sku,
+    availableQuantity: body.quantity,
+    categoryId: body.categoryId,
+    merchantLocationKey: "main",
+    price: body.price,
+    fulfillmentPolicyId,
+paymentPolicyId,
+returnPolicyId,
+  });
+
+  const offerId =
+    typeof offerResult === 'object' &&
+    offerResult !== null &&
+    'offerId' in offerResult &&
+    typeof offerResult.offerId === 'string'
+      ? offerResult.offerId
+      : null;
+
+  if (!offerId) {
+    throw new BadRequestException('eBay did not return an offerId.');
+  }
+
+  const publishResult = await this.offerService.publishOffer({
+    storeId: body.storeId,
+    offerId,
+    title: body.title,
+  });
+
+  return {
+    inventoryResult,
+    offerResult,
+    publishResult,
+  };
+}
+
+@Get('account-deletion')
+handleAccountDeletionChallenge(
+  @Query('challenge_code') challengeCode: string,
+) {
+  const verificationToken = 'DropSyncVerificationToken20260001';
+
+  const endpoint =
+  'https://acceptance-approved-injuries-trend.trycloudflare.com/ebay/account-deletion';
+
+  const challengeResponse = createHash('sha256')
+    .update(challengeCode)
+    .update(verificationToken)
+    .update(endpoint)
+    .digest('hex');
+
+  return { challengeResponse };
+}
+
+@Post('account-deletion')
+handleAccountDeletionNotification(@Body() body: unknown) {
+  console.log('eBay account-deletion notification received:', body);
+
+  return { received: true };
 }
 }

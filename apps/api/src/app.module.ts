@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ImporterModule } from './importer/importer.module.js';
+import { ListingsModule } from './listings/listings.module.js';
 import { AppController } from './app.controller.js';
 import { PrismaService } from './prisma.service.js';
 import { AuthModule } from './auth/auth.module.js';
@@ -8,6 +9,7 @@ import { StoresModule } from './stores/stores.module.js';
 import { AiModule } from './ai/ai.module.js';
 import { ListingDraftsModule } from './listing-drafts/listing-drafts.module';
 import { EbayModule } from './ebay/ebay.module.js';
+import { PublishHistoryModule } from './publish-history/publish-history.module.js';
 
 @Module({
   imports: [
@@ -18,6 +20,8 @@ import { EbayModule } from './ebay/ebay.module.js';
   ImporterModule,
   ListingDraftsModule,
   EbayModule,
+  PublishHistoryModule,
+  ListingsModule,
 ],
   controllers: [AppController],
   providers: [PrismaService],

@@ -17,20 +17,57 @@ export class WalmartImporter {
     const $ = cheerio.load(response.data);
 
     const title =
-      $('h1').first().text().trim() ||
-      $('title').text().trim() ||
-      'Unknown Walmart Product';
+  $('h1').first().text().trim() ||
+  $('title').text().trim() ||
+  'Unknown Walmart Product';
 
-    return {
-      title,
-      brand: '',
-      price: 0,
-      currency: 'USD',
-      description: '',
-      features: [],
-      images: [],
-      category: '',
-      specifications: {},
-    };
+const priceText =
+  $('[itemprop="price"]').attr('content') ||
+  $('[itemprop="price"]').first().text() ||
+  $('meta[property="product:price:amount"]').attr('content') ||
+  $('meta[itemprop="price"]').attr('content') ||
+  '';
+
+const priceMatch = priceText.match(/[\d,.]+/);
+
+const price = priceMatch
+  ? Number(priceMatch[0].replace(/,/g, ''))
+  : 0;
+
+const images = Array.from(
+  new Set(
+    [
+      $('meta[property="og:image"]').attr('content'),
+      $('meta[name="twitter:image"]').attr('content'),
+      ...$('img')
+        .map((_, element) => {
+          const image =
+            $(element).attr('src') ||
+            $(element).attr('data-src') ||
+            $(element).attr('data-image-src');
+
+          return image;
+        })
+        .get(),
+    ].filter(
+      (image): image is string =>
+        typeof image === 'string' &&
+        image.startsWith('http') &&
+        !image.includes('placeholder'),
+    ),
+  ),
+).slice(0, 12);
+
+return {
+  title,
+  brand: '',
+  price,
+  currency: 'USD',
+  description: '',
+  features: [],
+  images,
+  category: '',
+  specifications: {},
+};
   }
 }

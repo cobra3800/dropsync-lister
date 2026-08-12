@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { AiController } from './ai.controller.js';
 import { AiService } from './ai.service.js';
 import { AspectMapperService } from './aspect-mapper.service.js';
 import { ImporterModule } from '../importer/importer.module.js';
 
 @Module({
-  imports: [ImporterModule],
+  imports: [forwardRef(() => ImporterModule)],
   controllers: [AiController],
   providers: [
     AiService,

@@ -7,16 +7,64 @@ export default function AIGeneratorPage() {
   const [loading, setLoading] = useState(false);
 
   const [listing, setListing] = useState({
-    title: '',
-    description: '',
-    price: '',
-    category: '',
-  });
+  title: "",
+  description: "",
+  price: "",
+  category: "",
+  storeId: "",
 
-  async function generate() {
-  if (!url.trim()) {
-    return;
+  sku: "",
+  quantity: 1,
+  categoryId: "",
+});
+
+async function publishToEbay() {
+  try {
+    const response = await fetch(
+      "http://127.0.0.1:4000/ebay/publish-ai-listing",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+    title: listing.title,
+    description: listing.description,
+    price: Number(listing.price),
+
+    storeId: listing.storeId,
+    sku: listing.sku,
+    quantity: listing.quantity,
+    categoryId: listing.categoryId,
+        }),
+      },
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      alert(JSON.stringify(data, null, 2));
+      return;
+    }
+
+    alert("Published successfully!");
+  } catch (error) {
+    console.error(error);
+    alert("Publish failed");
   }
+}
+
+async function generate() {
+  if (!listing.storeId.trim()) {
+  alert("Enter your connected eBay Store ID first.");
+  return;
+}
+
+if (!url.trim()) {
+  alert("Enter a supplier product URL.");
+  return;
+}
 
   setLoading(true);
 
@@ -38,13 +86,39 @@ export default function AIGeneratorPage() {
     if (!response.ok) {
       throw new Error(data.message ?? 'AI generation failed');
     }
+    const categoryResponse = await fetch(
+  `http://127.0.0.1:4000/ebay/category-suggestions?storeId=${encodeURIComponent(
+    listing.storeId,
+  )}&title=${encodeURIComponent(data.title)}`,
+  {
+    credentials: "include",
+  },
+);
 
-    setListing({
-      title: data.title,
-      description: data.description,
-      price: data.price,
-      category: data.category,
-    });
+const categoryData = await categoryResponse.json();
+
+if (!categoryResponse.ok) {
+  throw new Error(
+    categoryData.message ?? "Unable to find an eBay category",
+  );
+}
+
+const categoryId =
+  categoryData?.categorySuggestions?.[0]?.category?.categoryId ?? "";
+
+    setListing((current) => ({
+  ...current,
+  title: data.title,
+  description: data.description,
+  price: data.price,
+  category: data.category,
+
+  sku:
+  data.sku ??
+  `DS-${Date.now().toString().slice(-8)}`,
+  quantity: data.quantity ?? 1,
+  categoryId,
+}));
   } catch (error) {
     console.error(error);
     alert(
@@ -66,8 +140,20 @@ export default function AIGeneratorPage() {
         </h1>
 
         <p className="text-slate-400 mb-8">
-          Paste a supplier URL and let AI build your eBay listing.
-        </p>
+  Paste a supplier URL and let AI build your eBay listing.
+</p>
+
+        <input
+  value={listing.storeId}
+  onChange={(e) =>
+    setListing((current) => ({
+      ...current,
+      storeId: e.target.value,
+    }))
+  }
+  placeholder="Paste your connected eBay Store ID..."
+  className="mb-4 w-full rounded-xl border border-slate-700 bg-slate-800 p-4 text-white placeholder:text-slate-400"
+/>
 
          <input
   value={url}
@@ -114,9 +200,12 @@ export default function AIGeneratorPage() {
               <p>{listing.category}</p>
             </div>
 
-            <button className="bg-green-600 px-6 py-3 rounded-xl">
-              Publish to eBay
-            </button>
+            <button
+    onClick={publishToEbay}
+    className="bg-green-600 px-6 py-3 rounded-xl"
+>
+    Publish to eBay
+</button>
 
           </div>
         )}

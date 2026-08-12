@@ -10,7 +10,7 @@ import { AiService } from './ai.service';
 export class AiController {
   constructor(private readonly aiService: AiService) {}
 
-  @Post('generate-listing')
+
     @Post('generate-listing')
   async generateListing(@Body() body: { url?: string }) {
     const url = body.url?.trim();
@@ -23,6 +23,38 @@ export class AiController {
 
     return this.aiService.generateListing(url);
   }
+  @Post('enhance-universal')
+async enhanceUniversal(
+  @Body()
+  body: {
+    product?: {
+      id: string;
+      source: string;
+      title: string;
+      description: string;
+      images: string[];
+      brand?: string;
+      category?: string;
+      specifications: Record<string, string>;
+      price: number;
+      quantity: number;
+      condition: string;
+      sku?: string;
+      upc?: string;
+      shippingWeight?: string;
+    };
+  },
+) {
+  if (!body.product) {
+    throw new BadRequestException(
+      'Universal product is required',
+    );
+  }
+
+  return this.aiService.enhanceUniversalProduct(
+    body.product,
+  );
+}
 
   @Post('optimize-listing')
   async optimizeListing(
