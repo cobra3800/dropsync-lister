@@ -137,10 +137,15 @@ console.log(
   'MAPPED ASPECTS:',
   JSON.stringify(mappedAspects, null, 2),
 );
+const combinedAspects: Record<string, string[]> = {
+  ...mappedAspects,
+  ...(aspects ?? {}),
+};
+
 const normalizedAspects: Record<string, string[]> = {};
 
 for (const [aspectName, rawValues] of Object.entries(
-  mappedAspects,
+  combinedAspects,
 )) {
   const categoryAspect = categoryAspects.find(
     (aspect) =>
@@ -178,7 +183,17 @@ for (const [aspectName, rawValues] of Object.entries(
           value.toLowerCase(),
       ),
     );
-
+if (
+  validValues.length === 0 &&
+  categoryAspect.required
+) {
+  console.log('REQUIRED ASPECT VALUE REJECTED:', {
+    categoryId,
+    aspectName,
+    suppliedValues: cleanedValues,
+    allowedValues: categoryAspect.values,
+  });
+}
     if (validValues.length === 0) {
       continue;
     }

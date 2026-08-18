@@ -370,6 +370,8 @@ const suggestions = Array.isArray(categoryData)
 const productText = [
   listing.title,
   product.title,
+  listing.description,
+product.description,
   listing.category,
   product.category,
   ...Object.keys(listing.itemSpecifics ?? {}),
@@ -379,52 +381,182 @@ const productText = [
   .join(' ')
   .toLowerCase();
 
-const selectedSuggestion =
-  [...suggestions]
-    .map((suggestion) => {
-      const categoryNames = [
-  suggestion?.category?.categoryName,
-  suggestion?.categoryName,
-  ...(suggestion?.categoryTreeNodeAncestors ?? []).map(
-    (ancestor: { categoryName?: string }) => ancestor.categoryName,
-  ),
-]
-  .filter(Boolean)
-  .join(' ')
-  .toLowerCase();
+const scoredSuggestions = [...suggestions]
+  .map((suggestion) => {
+    const categoryNames = [
+      suggestion?.category?.categoryName,
+      suggestion?.categoryName,
+      ...(suggestion?.categoryTreeNodeAncestors ?? []).map(
+        (ancestor: { categoryName?: string }) => ancestor.categoryName,
+      ),
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
 
-const words = categoryNames
-  .split(/[^a-z0-9]+/)
-  .filter(
-    (word) =>
-      word.length > 2 &&
-      !['other', 'and', 'the', 'for'].includes(word),
-  );
+    const words = categoryNames
+      .split(/[^a-z0-9]+/)
+      .filter(
+        (word) =>
+          word.length > 2 &&
+          !['other', 'and', 'the', 'for'].includes(word),
+      );
 
-      const strongWords = [
-  'camping',
-  'hiking',
-  'outdoor',
-  'sports',
-  'sporting',
-  'altitude',
-  'travel',
-  'fitness',
-  'recovery',
-];
+    const strongWords = [
+      'oxygen',
+      'canned oxygen',
+      'portable oxygen',
+      'supplemental oxygen',
+      'respiratory',
+      'breathing',
+      'altitude',
+      'aerobic',
+      'recovery',
+      'fitness',
+      'sports',
+      'travel',
+    ];
 
-const score = words.reduce((total, word) => {
-  if (!productText.includes(word)) {
-    return total;
+    const categoryMatchScore = words.reduce((total, word) => {
+      if (!productText.includes(word)) {
+        return total;
+      }
+
+      return total + 1;
+    }, 0);
+
+    const strongMatchScore = strongWords.reduce((total, phrase) => {
+      const productHasPhrase = productText.includes(phrase);
+      const categoryHasPhrase = categoryNames.includes(phrase);
+
+      if (productHasPhrase && categoryHasPhrase) {
+        return total + 8;
+      }
+
+      if (
+        productHasPhrase &&
+        words.some((word) => phrase.includes(word))
+      ) {
+        return total + 2;
+      }
+
+      return total;
+    }, 0);
+
+    const score = categoryMatchScore + strongMatchScore;
+
+    console.log('EBAY CATEGORY SCORE:', {
+      categoryId:
+        suggestion?.category?.categoryId ??
+        suggestion?.categoryId,
+      categoryName:
+        suggestion?.category?.categoryName ??
+        suggestion?.categoryName,
+      score,
+      matchedWords: words.filter((word) =>
+        productText.includes(word),
+      ),
+    });
+
+    return { suggestion, score };
+  })
+  .sort((a, b) => b.score - a.score);
+
+let selectedSuggestion = scoredSuggestions[0]?.suggestion ?? suggestions[0];
+
+for (const candidate of scoredSuggestions) {
+  const candidateCategoryId = String(
+    candidate.suggestion?.category?.categoryId ??
+      candidate.suggestion?.categoryId ??
+      '',
+  ).trim();
+
+  if (!candidateCategoryId) {
+    continue;
   }
 
-  return total + (strongWords.includes(word) ? 5 : 1);
-}, 0);
+  try {
+    const aspectsResponse = await fetch(
+      `${API_URL}/ebay/category-aspects?storeId=${encodeURIComponent(
+        activeStoreId,
+      )}&categoryId=${encodeURIComponent(candidateCategoryId)}`,
+      {
+        credentials: 'include',
+      },
+    );
 
-      return { suggestion, score };
-    })
-    .sort((a, b) => b.score - a.score)[0]?.suggestion ??
-  suggestions[0];
+    if (!aspectsResponse.ok) {
+      continue;
+    }
+
+    const categoryAspects = await readJson(aspectsResponse);
+
+    if (!Array.isArray(categoryAspects)) {
+      continue;
+    }
+
+    const hasConflict = categoryAspects.some((aspect) => {
+      if (
+        !aspect?.required ||
+        !Array.isArray(aspect?.values) ||
+        aspect.values.length === 0
+      ) {
+        return false;
+      }
+
+      const suppliedEntry = Object.entries(
+        listing.itemSpecifics ?? {},
+      ).find(
+        ([name]) =>
+          name.toLowerCase() ===
+          String(aspect.name ?? '').toLowerCase(),
+      );
+
+      if (!suppliedEntry) {
+        return false;
+      }
+
+      const rawValue = suppliedEntry[1];
+
+      const suppliedValues = Array.isArray(rawValue)
+        ? rawValue.map(String)
+        : [String(rawValue)];
+
+      const matchesAllowedValue = suppliedValues.some((suppliedValue) =>
+        aspect.values.some(
+          (allowedValue: string) =>
+            allowedValue.toLowerCase() ===
+            suppliedValue.toLowerCase(),
+        ),
+      );
+
+      if (!matchesAllowedValue) {
+        console.log('SKIPPING INCOMPATIBLE EBAY CATEGORY:', {
+          categoryId: candidateCategoryId,
+          categoryName:
+            candidate.suggestion?.category?.categoryName ??
+            candidate.suggestion?.categoryName,
+          aspectName: aspect.name,
+          suppliedValues,
+          allowedValues: aspect.values,
+        });
+      }
+
+      return !matchesAllowedValue;
+    });
+
+    if (!hasConflict) {
+      selectedSuggestion = candidate.suggestion;
+      break;
+    }
+  } catch (error) {
+    console.error(
+      'Unable to validate eBay category:',
+      candidateCategoryId,
+      error,
+    );
+  }
+}
 
 console.log(
   'SELECTED EBAY CATEGORY:',
@@ -454,7 +586,16 @@ for (const [name, value] of Object.entries(
     aspects[name] = [value.trim()];
   }
 }
-
+if (
+  aspects.Type?.[0]
+    ?.toLowerCase()
+    .includes('spin mop')
+) {
+  aspects.Type = ['Spin Mop'];
+}
+if (!aspects.Type?.length) {
+  aspects.Type = ['Other'];
+}
 const price = Number(listing.price ?? product.price ?? 0);
 
 if (!Number.isFinite(price) || price <= 0) {

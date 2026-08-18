@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   Request,
   UseGuards,
@@ -21,7 +23,15 @@ export class StoresController {
   }
 
   @Get()
-  findAll(@Request() req: any) {
-    return this.storesService.findAll(req.user.id);
-  }
+findAll(@Request() req: any) {
+  return this.storesService.findAll(req.user.id);
+}
+
+@Delete(':id')
+remove(
+  @Request() req: any,
+  @Param('id') id: string,
+) {
+  return this.storesService.remove(req.user.id, id);
+}
 }

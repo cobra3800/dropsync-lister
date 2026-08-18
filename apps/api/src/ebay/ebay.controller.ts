@@ -18,6 +18,7 @@ import type { CreateLocationInput } from './location.dto.js';
 import { TaxonomyService } from './taxonomy.service.js';
 import { AspectsService } from './aspects.service.js';
 import { createHash } from 'node:crypto';
+import { PrismaService } from '../prisma.service';
 
 @Controller('ebay')
 export class EbayController {
@@ -28,6 +29,7 @@ export class EbayController {
   private readonly offerService: OfferService,
   private readonly taxonomyService: TaxonomyService,
   private readonly aspectsService: AspectsService,
+  private readonly prisma: PrismaService,
 ) {}
 
   @Get('connect')
@@ -275,7 +277,28 @@ returnPolicyId,
     offerId,
     title: body.title,
   });
+const listingId =
+  typeof (publishResult as any)?.listingId === 'string'
+    ? (publishResult as any).listingId
+    : null;
 
+await this.prisma.listing.create({
+  data: {
+    storeId: body.storeId,
+    title: body.title,
+    sku: body.sku,
+    price: body.price,
+    quantity: body.quantity,
+    marketplace: 'EBAY',
+    status: 'ACTIVE',
+    imageUrl:
+      Array.isArray(body.imageUrls) && body.imageUrls.length > 0
+        ? body.imageUrls[0]
+        : null,
+    externalId: listingId,
+    externalUrl: null,
+  },
+});
   return {
     inventoryResult,
     offerResult,
