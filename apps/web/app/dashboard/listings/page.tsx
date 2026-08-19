@@ -155,9 +155,13 @@ export default function ListingsPage() {
                 <tbody>
                   {filteredListings.map((listing) => (
                     <tr
-                      key={listing.id}
-                      className="border-b border-slate-800 last:border-b-0"
-                    >
+  key={listing.id}
+  onClick={() => {
+    window.location.href = `/dashboard/listings/${listing.id}`;
+  }}
+  className="cursor-pointer border-b border-slate-800 transition hover:bg-slate-50"
+>
+                    
                       <td className="py-4 pr-4">
                         <div className="flex items-center gap-3">
                           <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-slate-800 text-xs text-slate-500">

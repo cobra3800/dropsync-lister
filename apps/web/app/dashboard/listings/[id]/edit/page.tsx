@@ -183,7 +183,7 @@ export default function EditListingPage() {
               id="title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 outline-none focus:border-blue-500"
+              className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 outline-none focus:border-blue-500 bg-slate-800 text-white"
             />
           </div>
 
