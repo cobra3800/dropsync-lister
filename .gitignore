@@ -10,3 +10,6 @@ pnpm-debug.log*
 .env.*
 !.env.example
 apps/api/.env.backup
+
+# Local Prisma database
+prisma/prisma/dev.db
