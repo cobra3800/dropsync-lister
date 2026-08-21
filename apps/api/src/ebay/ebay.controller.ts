@@ -178,6 +178,47 @@ async getCategoryAspects(
     categoryId,
   );
 }
+
+
+@Get('offer-by-sku')
+async getOfferBySku(
+  @Query('storeId') storeId: string,
+  @Query('sku') sku: string,
+) {
+  if (!storeId || !sku) {
+    throw new BadRequestException(
+      'storeId and sku are required',
+    );
+  }
+
+  return this.offerService.getOfferBySku(storeId, sku);
+}
+@Post('update-price-quantity')
+async updatePriceQuantity(
+  @Body()
+  body: {
+    storeId: string;
+    offerId: string;
+    sku: string;
+    price: number;
+    quantity: number;
+  },
+) {
+  if (
+    !body.storeId ||
+    !body.offerId ||
+    !body.sku ||
+    !Number.isFinite(body.price) ||
+    !Number.isInteger(body.quantity) ||
+    body.quantity < 0
+  ) {
+    throw new BadRequestException(
+      'storeId, offerId, sku, valid price, and quantity are required',
+    );
+  }
+
+  return this.offerService.updatePriceQuantity(body);
+}
 @Post('publish-ai-listing')
 async publishAiListing(
   @Body()

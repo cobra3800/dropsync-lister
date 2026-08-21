@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 
 type Listing = {
   id: string;
+  storeId: string;
   title: string;
   sku: string | null;
   price: number | null;
@@ -20,11 +21,12 @@ export default function EditListingPage() {
   const router = useRouter();
   const id = params.id;
 
-  const [title, setTitle] = useState("");
-  const [sku, setSku] = useState("");
-  const [price, setPrice] = useState("");
-  const [quantity, setQuantity] = useState("1");
-  const [status, setStatus] = useState("ACTIVE");
+  const [storeId, setStoreId] = useState("");
+const [title, setTitle] = useState("");
+const [sku, setSku] = useState("");
+const [price, setPrice] = useState("");
+const [quantity, setQuantity] = useState("1");
+const [status, setStatus] = useState("ACTIVE");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -48,7 +50,7 @@ export default function EditListingPage() {
         if (!listing) {
           throw new Error("Listing not found.");
         }
-
+        setStoreId(listing.storeId);
         setTitle(listing.title);
         setSku(listing.sku ?? "");
         setPrice(
@@ -123,7 +125,56 @@ export default function EditListingPage() {
             : "Unable to save listing.",
         );
       }
+if (storeId && sku.trim()) {
+  const offerResponse = await fetch(
+    `${API_URL}/ebay/offer-by-sku?storeId=${encodeURIComponent(
+      storeId,
+    )}&sku=${encodeURIComponent(sku.trim())}`,
+    {
+      cache: "no-store",
+    },
+  );
 
+  if (!offerResponse.ok) {
+    throw new Error("Unable to find the eBay offer.");
+  }
+
+  const offerData = await offerResponse.json();
+  const offer = offerData?.offers?.[0];
+
+  if (!offer?.offerId) {
+    throw new Error("No eBay offer found for this SKU.");
+  }
+
+  const ebayUpdateResponse = await fetch(
+    `${API_URL}/ebay/update-price-quantity`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        storeId,
+        offerId: offer.offerId,
+        sku: sku.trim(),
+        price: parsedPrice,
+        quantity: parsedQuantity,
+      }),
+    },
+  );
+
+  if (!ebayUpdateResponse.ok) {
+    const ebayError = await ebayUpdateResponse
+      .json()
+      .catch(() => null);
+
+    throw new Error(
+      typeof ebayError?.message === "string"
+        ? ebayError.message
+        : "Unable to update eBay listing.",
+    );
+  }
+}
       router.push(`/dashboard/listings/${id}`);
       router.refresh();
     } catch (caught) {

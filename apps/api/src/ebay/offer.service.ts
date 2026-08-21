@@ -197,5 +197,129 @@ await this.publishHistoryService.create({
 
 return ebayResult;
 }
+async getOfferBySku(storeId: string, sku: string) {
+  const account =
+    await this.ebayAccountRepository.findByStore(storeId);
+
+  if (!account?.accessToken) {
+    throw new NotFoundException(
+      'No connected eBay account found.',
+    );
+  }
+
+  let accessToken = account.accessToken;
+
+  if (!account.expiresAt || account.expiresAt <= new Date()) {
+    accessToken =
+      await this.ebayService.refreshAccessToken(storeId);
+  }
+
+  const response = await fetch(
+    `https://api.sandbox.ebay.com/sell/inventory/v1/offer?sku=${encodeURIComponent(
+      sku,
+    )}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+        'Accept-Language': 'en-US',
+        'Content-Language': 'en-US',
+      },
+    },
+  );
+
+  const responseText = await response.text();
+
+  const ebayResult = responseText
+    ? JSON.parse(responseText)
+    : {};
+
+  if (!response.ok) {
+    console.error(
+      'eBay get-offer-by-sku failed:',
+      ebayResult,
+    );
+
+    throw new BadRequestException(ebayResult);
+  }
+
+  return ebayResult;
+}
+async updatePriceQuantity(input: {
+  storeId: string;
+  offerId: string;
+  sku: string;
+  price: number;
+  quantity: number;
+}) {
+  const account =
+    await this.ebayAccountRepository.findByStore(input.storeId);
+
+  if (!account?.accessToken) {
+    throw new NotFoundException(
+      'No connected eBay account found.',
+    );
+  }
+
+  let accessToken = account.accessToken;
+
+  if (!account.expiresAt || account.expiresAt <= new Date()) {
+    accessToken =
+      await this.ebayService.refreshAccessToken(input.storeId);
+  }
+
+  const response = await fetch(
+    'https://api.sandbox.ebay.com/sell/inventory/v1/bulk_update_price_quantity',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'Accept-Language': 'en-US',
+        'Content-Language': 'en-US',
+      },
+      body: JSON.stringify({
+  requests: [
+    {
+      sku: input.sku,
+      offers: [
+        {
+          offerId: input.offerId,
+          availableQuantity: input.quantity,
+          price: {
+            value: input.price.toFixed(2),
+            currency: 'USD',
+          },
+        },
+      ],
+    },
+  ],
+}),
+    },
+  );
+
+  const responseText = await response.text();
+
+  const ebayResult = responseText
+    ? JSON.parse(responseText)
+    : {};
+
+  if (!response.ok) {
+    console.error(
+      'eBay price/quantity update failed:',
+      ebayResult,
+    );
+
+    throw new BadRequestException(ebayResult);
+  }
+
+  console.log(
+    'eBay price/quantity update succeeded:',
+    ebayResult,
+  );
+
+  return ebayResult;
+}
 }
 
