@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 type Listing = {
   id: string;
@@ -19,6 +19,9 @@ const API_URL =
 export default function EditListingPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+const aiTitle = searchParams.get("aiTitle");
+const aiPrice = searchParams.get("aiPrice");
   const id = params.id;
 
   const [storeId, setStoreId] = useState("");
@@ -51,13 +54,13 @@ const [status, setStatus] = useState("ACTIVE");
           throw new Error("Listing not found.");
         }
         setStoreId(listing.storeId);
-        setTitle(listing.title);
-        setSku(listing.sku ?? "");
-        setPrice(
-          listing.price === null ? "" : String(listing.price),
-        );
-        setQuantity(String(listing.quantity));
-        setStatus(listing.status);
+setTitle(aiTitle ?? listing.title);
+setSku(listing.sku ?? "");
+setPrice(
+  aiPrice ?? (listing.price === null ? "" : String(listing.price)),
+);
+setQuantity(String(listing.quantity));
+setStatus(listing.status);
       } catch (caught) {
         setError(
           caught instanceof Error
@@ -72,7 +75,7 @@ const [status, setStatus] = useState("ACTIVE");
     if (id) {
       void loadListing();
     }
-  }, [id]);
+  }, [id, aiTitle, aiPrice]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

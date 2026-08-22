@@ -183,12 +183,12 @@ export default async function ListingDetails({
   Edit Listing
 </a>
 
-              <button
-                type="button"
-                className="rounded-lg bg-purple-600 px-5 py-3 font-semibold hover:bg-purple-700"
-              >
-                Optimize with AI
-              </button>
+              <a
+  href={`/dashboard/listings/${id}/optimize`}
+  className="rounded-lg bg-purple-600 px-5 py-3 font-semibold hover:bg-purple-700"
+>
+  Optimize with AI
+</a>
 
               {listing.externalUrl ? (
                 <a
