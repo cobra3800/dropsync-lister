@@ -169,6 +169,7 @@ model Listing {
   id          String   @id @default(cuid())
   storeId     String
   title       String
+  description String?
   sku         String?
   price       Float?
   quantity    Int      @default(1)

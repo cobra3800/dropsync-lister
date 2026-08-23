@@ -7,6 +7,7 @@ type Listing = {
   id: string;
   storeId: string;
   title: string;
+  description: string | null;
   sku: string | null;
   price: number | null;
   quantity: number;
@@ -22,10 +23,12 @@ export default function EditListingPage() {
   const searchParams = useSearchParams();
 const aiTitle = searchParams.get("aiTitle");
 const aiPrice = searchParams.get("aiPrice");
+const aiDescription = searchParams.get("aiDescription");
   const id = params.id;
 
   const [storeId, setStoreId] = useState("");
 const [title, setTitle] = useState("");
+const [description, setDescription] = useState("");
 const [sku, setSku] = useState("");
 const [price, setPrice] = useState("");
 const [quantity, setQuantity] = useState("1");
@@ -55,6 +58,7 @@ const [status, setStatus] = useState("ACTIVE");
         }
         setStoreId(listing.storeId);
 setTitle(aiTitle ?? listing.title);
+setDescription(aiDescription ?? listing.description ?? "");
 setSku(listing.sku ?? "");
 setPrice(
   aiPrice ?? (listing.price === null ? "" : String(listing.price)),
@@ -75,7 +79,7 @@ setStatus(listing.status);
     if (id) {
       void loadListing();
     }
-  }, [id, aiTitle, aiPrice]);
+  }, [id, aiTitle, aiPrice, aiDescription]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -112,6 +116,7 @@ setStatus(listing.status);
         },
         body: JSON.stringify({
           title: title.trim(),
+          description: description.trim() || null,
           sku: sku.trim() || null,
           price: parsedPrice,
           quantity: parsedQuantity,
@@ -240,7 +245,22 @@ if (storeId && sku.trim()) {
               className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 outline-none focus:border-blue-500 bg-slate-800 text-white"
             />
           </div>
+<div>
+  <label
+    htmlFor="description"
+    className="mb-2 block text-sm font-medium text-slate-300"
+  >
+    Description
+  </label>
 
+  <textarea
+    id="description"
+    value={description}
+    onChange={(event) => setDescription(event.target.value)}
+    rows={8}
+    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-white"
+  />
+</div>
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <label
