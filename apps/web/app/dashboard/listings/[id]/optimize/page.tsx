@@ -261,6 +261,8 @@ export default function OptimizeListingPage() {
   String(optimized.price ?? "")
 )}&aiDescription=${encodeURIComponent(
   String(optimized.description ?? "")
+)}&aiCondition=${encodeURIComponent(
+  String(optimized.condition ?? "")
 )}`}
   className="mt-6 inline-block rounded-lg bg-green-600 px-6 py-3 font-semibold hover:bg-green-700"
 >

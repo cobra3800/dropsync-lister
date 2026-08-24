@@ -12,6 +12,7 @@ type Listing = {
   price: number | null;
   quantity: number;
   status: string;
+  condition: string;
 };
 
 const API_URL =
@@ -24,6 +25,7 @@ export default function EditListingPage() {
 const aiTitle = searchParams.get("aiTitle");
 const aiPrice = searchParams.get("aiPrice");
 const aiDescription = searchParams.get("aiDescription");
+const aiCondition = searchParams.get("aiCondition");
   const id = params.id;
 
   const [storeId, setStoreId] = useState("");
@@ -33,6 +35,7 @@ const [sku, setSku] = useState("");
 const [price, setPrice] = useState("");
 const [quantity, setQuantity] = useState("1");
 const [status, setStatus] = useState("ACTIVE");
+const [condition, setCondition] = useState("NEW");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -65,6 +68,7 @@ setPrice(
 );
 setQuantity(String(listing.quantity));
 setStatus(listing.status);
+setCondition(aiCondition ?? listing.condition);
       } catch (caught) {
         setError(
           caught instanceof Error
@@ -79,7 +83,7 @@ setStatus(listing.status);
     if (id) {
       void loadListing();
     }
-  }, [id, aiTitle, aiPrice, aiDescription]);
+  }, [id, aiTitle, aiPrice, aiDescription, aiCondition]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -121,6 +125,7 @@ setStatus(listing.status);
           price: parsedPrice,
           quantity: parsedQuantity,
           status,
+          condition,
         }),
       });
 
@@ -339,7 +344,25 @@ if (storeId && sku.trim()) {
               </select>
             </div>
           </div>
+<div>
+  <label
+    htmlFor="condition"
+    className="mb-2 block text-sm font-medium text-slate-300"
+  >
+    Condition
+  </label>
 
+  <select
+    id="condition"
+    value={condition}
+    onChange={(event) => setCondition(event.target.value)}
+    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-white"
+  >
+    <option value="NEW">NEW</option>
+    <option value="USED">USED</option>
+    <option value="REFURBISHED">REFURBISHED</option>
+  </select>
+</div>
           <div className="flex flex-wrap gap-3 pt-2">
             <button
               type="submit"

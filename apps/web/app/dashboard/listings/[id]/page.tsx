@@ -6,6 +6,7 @@ type Listing = {
   quantity: number;
   marketplace: string;
   status: string;
+  condition: string;
   imageUrl: string | null;
   externalId: string | null;
   externalUrl: string | null;
@@ -173,6 +174,12 @@ export default async function ListingDetails({
                   {new Date(listing.updatedAt).toLocaleString()}
                 </p>
               </div>
+              <div className="rounded-xl bg-slate-800 p-5">
+  <p className="text-sm text-slate-400">Condition</p>
+  <p className="mt-2 break-all font-medium">
+    {listing.condition ?? "Not set"}
+  </p>
+</div>
             </div>
 
             <div className="mt-8 flex flex-wrap gap-3">
