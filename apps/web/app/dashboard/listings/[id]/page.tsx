@@ -7,6 +7,7 @@ type Listing = {
   marketplace: string;
   status: string;
   condition: string;
+  category: string | null;
   imageUrl: string | null;
   externalId: string | null;
   externalUrl: string | null;
@@ -178,6 +179,12 @@ export default async function ListingDetails({
   <p className="text-sm text-slate-400">Condition</p>
   <p className="mt-2 break-all font-medium">
     {listing.condition ?? "Not set"}
+  </p>
+</div>
+<div className="rounded-xl bg-slate-800 p-5">
+  <p className="text-sm text-slate-400">Category</p>
+  <p className="mt-2 break-all font-medium">
+    {listing.category ?? "Not set"}
   </p>
 </div>
             </div>

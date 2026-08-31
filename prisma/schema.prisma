@@ -176,6 +176,7 @@ model Listing {
   marketplace String   @default("EBAY")
   status      String   @default("ACTIVE")
   condition   String   @default("NEW")
+  category    String?
   imageUrl    String?
   externalId  String?
   externalUrl String?

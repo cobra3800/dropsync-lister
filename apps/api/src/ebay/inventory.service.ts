@@ -8,6 +8,7 @@ import { EbayAccountRepository } from './repositories/ebay-account.repository.js
 import type { CreateLocationInput } from './location.dto.js';
 import { AspectMapperService } from '../ai/aspect-mapper.service.js';
 import { AspectsService } from './aspects.service.js';
+import sharp = require('sharp');
 
 export type CreateInventoryItemInput = {
   storeId: string;
@@ -229,8 +230,15 @@ const product: Record<string, unknown> = {
 };
 
     if (imageUrls.length > 0) {
-      product.imageUrls = imageUrls;
-    }
+  const ebayImageUrl = await this.importImageToEbay(
+    imageUrls[0],
+    accessToken,
+  );
+
+  product.imageUrls = [ebayImageUrl];
+}
+    console.log('IMAGE URLS TO EBAY:', imageUrls);
+console.log('PRODUCT IMAGE URLS:', product.imageUrls);
 console.log('Sending condition to eBay:', condition);
 console.log('SKU:', sku);
 console.log('Request body:', JSON.stringify({
@@ -242,7 +250,67 @@ console.log('Request body:', JSON.stringify({
   condition,
   product,
 }, null, 2));
-    const response = await fetch(
+    
+const existingResponse = await fetch(
+  `https://api.sandbox.ebay.com/sell/inventory/v1/inventory_item/${encodeURIComponent(
+    sku,
+  )}`,
+  {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/json',
+      'Accept-Language': 'en-US',
+    },
+  },
+);
+
+const existingText = await existingResponse.text();
+
+let existingItem: any = {};
+
+if (existingResponse.ok && existingText) {
+  try {
+    existingItem = JSON.parse(existingText);
+  } catch {
+    existingItem = {};
+  }
+}
+const existingProduct =
+  existingItem?.product && typeof existingItem.product === 'object'
+    ? existingItem.product
+    : {};
+
+const existingAspects =
+  existingProduct?.aspects && typeof existingProduct.aspects === 'object'
+    ? existingProduct.aspects
+    : {};
+
+const mergedProduct = {
+  ...existingProduct,
+  ...product,
+  aspects: {
+    ...existingAspects,
+    ...((product.aspects as Record<string, string[]>) ?? {}),
+    Type:
+      (product.aspects as Record<string, string[]>)?.Type?.length
+        ? (product.aspects as Record<string, string[]>).Type
+        : existingAspects.Type?.length
+          ? existingAspects.Type
+          : ['Mop & Bucket Set'],
+  },
+};
+const existingAvailability =
+  existingItem?.availability && typeof existingItem.availability === 'object'
+    ? existingItem.availability
+    : {};
+
+const existingShipAvailability =
+  existingAvailability?.shipToLocationAvailability &&
+  typeof existingAvailability.shipToLocationAvailability === 'object'
+    ? existingAvailability.shipToLocationAvailability
+    : {};
+const response = await fetch(
       `https://api.sandbox.ebay.com/sell/inventory/v1/inventory_item/${encodeURIComponent(sku)}`,
       {
         method: 'PUT',
@@ -255,17 +323,21 @@ console.log('Request body:', JSON.stringify({
 },
         body: JSON.stringify({
           availability: {
-            shipToLocationAvailability: {
-              quantity,
-            },
-          },
+  ...existingAvailability,
+  shipToLocationAvailability: {
+    ...existingShipAvailability,
+    quantity,
+  },
+},
           condition,
-          product,
+          product: mergedProduct,
         }),
       },
     );
 
     const responseText = await response.text();
+    console.log('EBAY INVENTORY PUT STATUS:', response.status);
+console.log('EBAY INVENTORY PUT RESPONSE:', responseText);
 
     let ebayResult: unknown = null;
 
@@ -278,6 +350,7 @@ console.log('Request body:', JSON.stringify({
     }
 
     if (!response.ok) {
+      console.error('eBay inventory update failed:', ebayResult);
       throw new BadRequestException({
         message: 'Unable to create eBay inventory item',
         ebayError: ebayResult,
@@ -291,7 +364,85 @@ console.log('Request body:', JSON.stringify({
       ebayResult,
     };
   }
+  private async prepareImageForEbay(imageUrl: string): Promise<Buffer> {
+  const response = await fetch(imageUrl);
 
+  if (!response.ok) {
+    throw new BadRequestException(
+      `Unable to download image: ${response.status}`,
+    );
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const inputBuffer = Buffer.from(arrayBuffer);
+
+  const outputBuffer = await sharp(inputBuffer)
+    .resize({
+      width: 3000,
+      height: 3000,
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .jpeg({
+      quality: 90,
+    })
+    .toBuffer();
+
+  return outputBuffer;
+}
+private async importImageToEbay(
+  imageUrl: string,
+  accessToken: string,
+): Promise<string> {
+  const imageBuffer = await this.prepareImageForEbay(imageUrl);
+
+  const formData = new FormData();
+
+  formData.append(
+    'image',
+    new Blob([new Uint8Array(imageBuffer)], {
+      type: 'image/jpeg',
+    }),
+    'dropsync-image.jpg',
+  );
+
+  const response = await fetch(
+    'https://apim.sandbox.ebay.com/commerce/media/v1_beta/image/create_image_from_file',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: 'application/json',
+      },
+      body: formData,
+    },
+  );
+
+  const responseText = await response.text();
+
+  console.log('EBAY MEDIA STATUS:', response.status);
+  console.log('EBAY MEDIA RESPONSE:', responseText);
+
+  if (!response.ok) {
+    throw new BadRequestException(
+      `Unable to import image into eBay: ${responseText}`,
+    );
+  }
+
+  let result: { imageUrl?: string } = {};
+
+  if (responseText) {
+    result = JSON.parse(responseText) as { imageUrl?: string };
+  }
+
+  if (!result.imageUrl) {
+    throw new BadRequestException(
+      'eBay Media API did not return an imageUrl.',
+    );
+  }
+
+  return result.imageUrl;
+}
     async createMerchantLocation(input: CreateLocationInput) {
     const account =
       await this.ebayAccountRepository.findByStore(input.storeId);

@@ -13,6 +13,8 @@ type Listing = {
   quantity: number;
   status: string;
   condition: string;
+  category: string | null;
+  imageUrl: string | null;
 };
 
 const API_URL =
@@ -26,6 +28,7 @@ const aiTitle = searchParams.get("aiTitle");
 const aiPrice = searchParams.get("aiPrice");
 const aiDescription = searchParams.get("aiDescription");
 const aiCondition = searchParams.get("aiCondition");
+const aiCategory = searchParams.get("aiCategory");
   const id = params.id;
 
   const [storeId, setStoreId] = useState("");
@@ -36,7 +39,8 @@ const [price, setPrice] = useState("");
 const [quantity, setQuantity] = useState("1");
 const [status, setStatus] = useState("ACTIVE");
 const [condition, setCondition] = useState("NEW");
-
+const [category, setCategory] = useState("");
+const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -55,6 +59,7 @@ const [condition, setCondition] = useState("NEW");
         }
 
         const listing = (await response.json()) as Listing | null;
+        console.log("LOADED LISTING IMAGE URL:", listing?.imageUrl);
 
         if (!listing) {
           throw new Error("Listing not found.");
@@ -69,6 +74,8 @@ setPrice(
 setQuantity(String(listing.quantity));
 setStatus(listing.status);
 setCondition(aiCondition ?? listing.condition);
+setCategory(aiCategory ?? listing.category ?? "");
+setImageUrl(listing.imageUrl ?? null);
       } catch (caught) {
         setError(
           caught instanceof Error
@@ -83,7 +90,7 @@ setCondition(aiCondition ?? listing.condition);
     if (id) {
       void loadListing();
     }
-  }, [id, aiTitle, aiPrice, aiDescription, aiCondition]);
+  }, [id, aiTitle, aiPrice, aiDescription, aiCondition, aiCategory]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -126,6 +133,7 @@ setCondition(aiCondition ?? listing.condition);
           quantity: parsedQuantity,
           status,
           condition,
+          category: category.trim() || null,
         }),
       });
 
@@ -158,7 +166,36 @@ if (storeId && sku.trim()) {
   if (!offer?.offerId) {
     throw new Error("No eBay offer found for this SKU.");
   }
+const inventoryUpdateResponse = await fetch(
+  `${API_URL}/ebay/inventory-item`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+  storeId,
+  sku: sku.trim(),
+  title: title.trim(),
+  description: description.trim(),
+  quantity: parsedQuantity,
+  condition,
+  imageUrls: imageUrl ? [imageUrl] : [],
+}),
+  },
+);
 
+if (!inventoryUpdateResponse.ok) {
+  const inventoryError = await inventoryUpdateResponse
+    .json()
+    .catch(() => null);
+
+  throw new Error(
+    typeof inventoryError?.message === "string"
+      ? inventoryError.message
+      : "Unable to update eBay inventory item.",
+  );
+}
   const ebayUpdateResponse = await fetch(
     `${API_URL}/ebay/update-price-quantity`,
     {
@@ -362,6 +399,21 @@ if (storeId && sku.trim()) {
     <option value="USED">USED</option>
     <option value="REFURBISHED">REFURBISHED</option>
   </select>
+</div>
+<div>
+  <label
+    htmlFor="category"
+    className="mb-2 block text-sm font-medium text-slate-300"
+  >
+    Category
+  </label>
+
+  <input
+    id="category"
+    value={category}
+    onChange={(event) => setCategory(event.target.value)}
+    className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-3 text-white"
+  />
 </div>
           <div className="flex flex-wrap gap-3 pt-2">
             <button

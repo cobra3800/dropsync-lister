@@ -8,11 +8,11 @@
     "lint": "echo api lint ok"
   },
   "dependencies": {
-    "@nestjs/common": "latest",
-    "@nestjs/core": "latest",
+    "@nestjs/common": "^11.2.3",
+    "@nestjs/core": "^11.2.3",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/passport": "^11.0.5",
-    "@nestjs/platform-express": "latest",
+    "@nestjs/platform-express": "^11.2.3",
     "@prisma/client": "5.22.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "latest",
@@ -23,7 +23,8 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "latest",
-    "rxjs": "latest"
+    "rxjs": "latest",
+    "sharp": "^0.35.4"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.23",
