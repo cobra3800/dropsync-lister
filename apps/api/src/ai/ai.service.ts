@@ -69,6 +69,9 @@ Rules:
 - Recommend a competitive selling price.
 - Suggest the best eBay category.
 - Generate realistic item specifics.
+- Preserve all product dimensions and measurements found in the supplier data.
+- For dimensions, use eBay-style item specific names such as "Item Width", "Item Length", and "Item Height".
+- Never invent a dimension or measurement that is not supported by the supplier product data.
 - Include search keywords buyers would use.
 - Estimate shipping weight.
         `.trim(),

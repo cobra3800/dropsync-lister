@@ -57,17 +57,115 @@ const images = Array.from(
     ),
   ),
 ).slice(0, 12);
+const specifications: Record<string, string> = {};
+let description = '';
+let brand = '';
 
+$('script[type="application/ld+json"]').each((_, element) => {
+  try {
+    const raw = $(element).html();
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw);
+    const nodes = Array.isArray(parsed) ? parsed : [parsed];
+
+    for (const node of nodes) {
+      if (!node || typeof node !== 'object') continue;
+
+      const candidates = Array.isArray(node['@graph'])
+        ? node['@graph']
+        : [node];
+
+      for (const candidate of candidates) {
+        if (
+          !candidate ||
+          typeof candidate !== 'object' ||
+          candidate['@type'] !== 'Product'
+        ) {
+          continue;
+        }
+
+        if (typeof candidate.description === 'string') {
+          description = candidate.description.trim();
+        }
+
+        if (typeof candidate.brand === 'string') {
+          brand = candidate.brand.trim();
+        } else if (
+          candidate.brand &&
+          typeof candidate.brand.name === 'string'
+        ) {
+          brand = candidate.brand.name.trim();
+        }
+
+        const properties = candidate.additionalProperty;
+
+        if (Array.isArray(properties)) {
+          for (const property of properties) {
+            if (
+              property &&
+              typeof property.name === 'string' &&
+              property.value != null
+            ) {
+              const value =
+                typeof property.value === 'string' ||
+                typeof property.value === 'number'
+                  ? String(property.value)
+                  : '';
+
+              if (value) {
+                specifications[property.name.trim()] = value.trim();
+              }
+            }
+          }
+        }
+
+        const addMeasurement = (
+          name: string,
+          measurement: unknown,
+        ) => {
+          if (typeof measurement === 'string') {
+            specifications[name] = measurement.trim();
+            return;
+          }
+
+          if (
+            measurement &&
+            typeof measurement === 'object'
+          ) {
+            const m = measurement as {
+              value?: string | number;
+              unitText?: string;
+              unitCode?: string;
+            };
+
+            if (m.value != null) {
+              specifications[name] = `${m.value}${
+                m.unitText ? ` ${m.unitText}` : ''
+              }`.trim();
+            }
+          }
+        };
+
+        addMeasurement('Width', candidate.width);
+        addMeasurement('Height', candidate.height);
+        addMeasurement('Depth', candidate.depth);
+      }
+    }
+  } catch {
+    // Ignore malformed structured-data blocks.
+  }
+});
 return {
   title,
-  brand: '',
+  brand,
   price,
   currency: 'USD',
-  description: '',
+  description,
   features: [],
   images,
   category: '',
-  specifications: {},
+  specifications,
 };
   }
 }

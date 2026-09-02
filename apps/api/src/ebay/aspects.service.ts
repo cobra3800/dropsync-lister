@@ -11,6 +11,7 @@ type EbayAspect = {
     aspectRequired?: boolean;
     aspectUsage?: string;
     itemToAspectCardinality?: string;
+    aspectMode?: string;
   };
   aspectValues?: EbayAspectValue[];
 };
@@ -72,6 +73,9 @@ export class AspectsService {
       cardinality:
         aspect.aspectConstraint?.itemToAspectCardinality ??
         'SINGLE',
+        mode:
+       aspect.aspectConstraint?.aspectMode ??
+     'FREE_TEXT',
       values:
         aspect.aspectValues
           ?.map((value) => value.localizedValue)

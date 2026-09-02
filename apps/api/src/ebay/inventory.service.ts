@@ -87,6 +87,7 @@ let categoryAspects: Array<{
   required: boolean;
   usage: string;
   cardinality: string;
+  mode: string;
   values: string[];
 }> = [];
 
@@ -154,7 +155,11 @@ for (const [aspectName, rawValues] of Object.entries(
       aspectName.toLowerCase(),
   );
 
-  const cleanedValues = rawValues
+  const values = Array.isArray(rawValues)
+  ? rawValues
+  : [String(rawValues)];
+
+const cleanedValues = values
   .map((value) => value.trim())
   .filter(Boolean)
   .map((value) =>
@@ -176,15 +181,19 @@ for (const [aspectName, rawValues] of Object.entries(
 
   let validValues = cleanedValues;
 
-  if (categoryAspect.values.length > 0) {
-    validValues = cleanedValues.filter((value) =>
-      categoryAspect.values.some(
-        (allowedValue) =>
-          allowedValue.toLowerCase() ===
-          value.toLowerCase(),
-      ),
-    );
-if (
+  if (
+  categoryAspect.mode === 'SELECTION_ONLY' &&
+  categoryAspect.values.length > 0
+) {
+  validValues = cleanedValues.filter((value) =>
+    categoryAspect.values.some(
+      (allowedValue) =>
+        allowedValue.toLowerCase() ===
+        value.toLowerCase(),
+    ),
+  );
+}
+ if (
   validValues.length === 0 &&
   categoryAspect.required
 ) {
@@ -198,7 +207,7 @@ if (
     if (validValues.length === 0) {
       continue;
     }
-  }
+  
 
   if (categoryAspect.cardinality === 'MULTI') {
     normalizedAspects[aspectName] =
@@ -208,6 +217,36 @@ if (
       validValues[0],
     ];
   }
+}
+const presentAspectNames = new Set(
+  Object.entries(normalizedAspects)
+    .filter(
+      ([, values]) =>
+        Array.isArray(values) &&
+        values.length > 0,
+    )
+    .map(([name]) => name.trim().toLowerCase()),
+);
+
+const missingRequiredAspects = categoryAspects
+  .filter(
+    (aspect) =>
+      aspect.required &&
+      !presentAspectNames.has(
+        aspect.name.trim().toLowerCase(),
+      ),
+  )
+  .map((aspect) => aspect.name);
+
+if (missingRequiredAspects.length > 0) {
+  console.log(
+    'MISSING REQUIRED EBAY ASPECTS:',
+    missingRequiredAspects,
+  );
+
+  throw new BadRequestException(
+    `Missing required eBay item specifics: ${missingRequiredAspects.join(', ')}`,
+  );
 }
 console.log(
   'NORMALIZED ASPECTS:',
