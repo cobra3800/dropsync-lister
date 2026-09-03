@@ -37,6 +37,7 @@ type QueueItem = {
   status?: string;
   progress?: number;
   error?: string | null;
+  listingId?: string | null;
 };
 
 type PublishResult = {
@@ -836,15 +837,26 @@ const response = await fetch(
   </p>
 
   {job.error ? (
-    <p className="mt-2 text-sm text-red-300">{job.error}</p>
-  ) : null}
+  <p className="mt-2 text-sm text-red-300">{job.error}</p>
+) : null}
 
-  <button
-    className="mt-3 rounded bg-red-600 px-3 py-1 text-sm font-medium hover:bg-red-700"
-    onClick={() => deleteQueueItem(job.id)}
+{job.listingId ? (
+  <a
+    href={`https://sandbox.ebay.com/itm/${job.listingId}`}
+    target="_blank"
+    rel="noreferrer"
+    className="mt-3 inline-block rounded bg-blue-600 px-3 py-1 text-sm font-medium hover:bg-blue-700"
   >
-    🗑 Delete
-  </button>
+    View on eBay
+  </a>
+) : null}
+
+<button
+  className="mt-3 rounded bg-red-600 px-3 py-1 text-sm font-medium hover:bg-red-700"
+  onClick={() => deleteQueueItem(job.id)}
+>
+  🗑 Delete
+</button>
 </div>
               ))}
             </div>

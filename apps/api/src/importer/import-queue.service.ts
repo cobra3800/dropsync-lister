@@ -299,11 +299,15 @@ export class ImportQueueService {
     });
 
     // 7. Publish the offer to eBay.
-    await this.offerService.publishOffer({
+    const publishResult = await this.offerService.publishOffer({
       storeId: job.storeId,
       offerId,
       title,
     });
+    const listingId =
+  typeof (publishResult as { listingId?: unknown })?.listingId === 'string'
+    ? (publishResult as { listingId: string }).listingId
+    : null;
 // Save the completed import in permanent history.
 await this.prisma.importHistory.create({
   data: {
@@ -353,6 +357,7 @@ await this.prisma.listing.create({
         progress: 100,
         title,
         error: null,
+        listingId,
       },
     });
       } catch (error: unknown) {
