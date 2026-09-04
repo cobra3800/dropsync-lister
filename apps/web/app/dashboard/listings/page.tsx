@@ -218,8 +218,20 @@ export default function ListingsPage() {
                       </td>
 
                       <td className="px-4 py-4 text-slate-300">
-                        {listing.externalId ?? "—"}
-                      </td>
+  {listing.externalUrl ? (
+    <a
+      href={listing.externalUrl}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="inline-block rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
+    >
+      View on eBay
+    </a>
+  ) : (
+    listing.externalId ?? "—"
+  )}
+</td>
                     </tr>
                   ))}
                 </tbody>
