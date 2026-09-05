@@ -118,7 +118,10 @@ export class ImportQueueService {
         job.storeId,
         generatedListing.title,
       );
-
+console.log(
+  'EBAY CATEGORY SUGGESTIONS:',
+  JSON.stringify(categorySuggestions, null, 2),
+);
     const firstSuggestion = categorySuggestions[0] as {
       category?: {
         categoryId?: string;
@@ -341,9 +344,11 @@ await this.prisma.listing.create({
     quantity: 1,
     marketplace: 'EBAY',
     status: 'ACTIVE',
-    imageUrl: productImageUrl,
-    externalId: offerId || null,
-    externalUrl: null,
+imageUrl: productImageUrl,
+externalId: listingId,
+externalUrl: listingId
+  ? `https://sandbox.ebay.com/itm/${listingId}`
+  : null,
   },
 });
 
