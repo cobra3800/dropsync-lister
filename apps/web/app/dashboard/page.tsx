@@ -60,6 +60,9 @@ export default function DashboardPage() {
 
           <button
             key={item}
+            onClick={() => {
+  if (item === "Inventory") window.location.href = "/dashboard/listings";
+}}
             className="w-full rounded-lg px-4 py-3 text-left hover:bg-slate-800"
           >
             {item}

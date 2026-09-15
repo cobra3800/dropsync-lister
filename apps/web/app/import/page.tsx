@@ -604,7 +604,7 @@ if (!Number.isFinite(price) || price <= 0) {
 }
 
 const sku = `DS-${Date.now()}`;
-
+console.log('DROPSYNC PUBLISH SKU:', sku);
 setPublishStep('Creating and publishing eBay listing...');
 
 const response = await fetch(

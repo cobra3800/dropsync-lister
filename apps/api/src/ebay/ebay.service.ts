@@ -544,5 +544,118 @@ let result: unknown = null;
     result,
   };
 }
+  async createPaymentPolicy(storeId: string) {
+    const account = await this.ebayRepository.findByStore(storeId);
 
+    if (!account?.accessToken) {
+      throw new BadRequestException(
+        'No connected eBay account found for this store.',
+      );
+    }
+
+    let accessToken = account.accessToken;
+
+    if (!account.expiresAt || account.expiresAt <= new Date()) {
+      accessToken = await this.refreshAccessToken(storeId);
+    }
+
+    const response = await fetch(
+      'https://api.sandbox.ebay.com/sell/account/v1/payment_policy',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: 'DropSync Payment Policy',
+          marketplaceId: 'EBAY_US',
+          categoryTypes: [
+            {
+              name: 'ALL_EXCLUDING_MOTORS_VEHICLES',
+              default: true,
+            },
+          ],
+        }),
+      },
+    );
+
+    const responseText = await response.text();
+    let result: unknown = null;
+
+    if (responseText) {
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        result = responseText;
+      }
+    }
+
+    return {
+      status: response.status,
+      ok: response.ok,
+      location: response.headers.get('location'),
+      result,
+    };
+  }
+    async createReturnPolicy(storeId: string) {
+    const account = await this.ebayRepository.findByStore(storeId);
+
+    if (!account?.accessToken) {
+      throw new BadRequestException(
+        'No connected eBay account found for this store.',
+      );
+    }
+
+    let accessToken = account.accessToken;
+
+    if (!account.expiresAt || account.expiresAt <= new Date()) {
+      accessToken = await this.refreshAccessToken(storeId);
+    }
+
+    const response = await fetch(
+      'https://api.sandbox.ebay.com/sell/account/v1/return_policy',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: 'DropSync Return Policy',
+          marketplaceId: 'EBAY_US',
+          categoryTypes: [
+            {
+              name: 'ALL_EXCLUDING_MOTORS_VEHICLES',
+              default: true,
+            },
+          ],
+          returnsAccepted: true,
+          returnPeriod: {
+            value: 30,
+            unit: 'DAY',
+          },
+          returnShippingCostPayer: 'BUYER',
+        }),
+      },
+    );
+
+    const responseText = await response.text();
+    let result: unknown = null;
+
+    if (responseText) {
+      try {
+        result = JSON.parse(responseText);
+      } catch {
+        result = responseText;
+      }
+    }
+
+    return {
+      status: response.status,
+      ok: response.ok,
+      location: response.headers.get('location'),
+      result,
+    };
+  }
 } // closes EbayService

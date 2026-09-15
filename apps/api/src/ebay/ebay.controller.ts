@@ -55,33 +55,18 @@ async callback(
     };
   }
 
-  if (!code) {
+  if (!code || !storeId) {
     return {
       connected: false,
-      error: 'missing_authorization_code',
+      error: 'Missing authorization code or store ID',
     };
   }
 
-  if (!storeId) {
-    return {
-      connected: false,
-      error: 'missing_store_id',
-    };
-  }
-
-  const tokens =
-    await this.ebayService.exchangeAuthorizationCode(
-      code,
-      storeId,
-    );
+  await this.ebayService.exchangeAuthorizationCode(code, storeId);
 
   return {
     connected: true,
-    tokenType: tokens.token_type,
-    accessTokenExpiresIn: tokens.expires_in,
-    refreshTokenReceived: Boolean(tokens.refresh_token),
-    refreshTokenExpiresIn:
-      tokens.refresh_token_expires_in ?? null,
+    storeId,
   };
 }
 
@@ -139,6 +124,19 @@ async createFulfillmentPolicy(
   @Body() body: { storeId: string },
 ) {
   return this.ebayService.createFulfillmentPolicy(body.storeId);
+}
+@Post('policies/create-payment')
+async createPaymentPolicy(
+  @Body() body: { storeId: string },
+) {
+  return this.ebayService.createPaymentPolicy(body.storeId);
+}
+
+@Post('policies/create-return')
+async createReturnPolicy(
+  @Body() body: { storeId: string },
+) {
+  return this.ebayService.createReturnPolicy(body.storeId);
 }
 @Post('policies/create-defaults')
 async createDefaultPolicies(

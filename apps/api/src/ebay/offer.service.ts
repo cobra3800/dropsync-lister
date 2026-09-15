@@ -321,5 +321,44 @@ async updatePriceQuantity(input: {
 
   return ebayResult;
 }
+async createPaymentPolicy(storeId: string) {
+  const account =
+    await this.ebayAccountRepository.findByStore(storeId);
+
+  if (!account) {
+    throw new BadRequestException('eBay account not found');
+  }
+
+  const response = await fetch(
+    'https://api.sandbox.ebay.com/sell/account/v1/payment_policy',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${account.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: 'DropSync Payment Policy',
+        marketplaceId: 'EBAY_US',
+        categoryTypes: [
+          {
+            name: 'ALL_EXCLUDING_MOTORS_VEHICLES',
+            default: true,
+          },
+        ],
+      }),
+    },
+  );
+
+  const text = await response.text();
+  const result = text ? JSON.parse(text) : {};
+
+  if (!response.ok) {
+    console.error('eBay payment policy creation failed:', result);
+    throw new BadRequestException(result);
+  }
+
+  return result;
+}
 }
 
