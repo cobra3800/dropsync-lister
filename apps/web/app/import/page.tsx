@@ -618,6 +618,7 @@ const response = await fetch(
     body: JSON.stringify({
       storeId: activeStoreId,
       sku,
+      supplierUrl: url,
       title: listing.title || product.title || 'Untitled Product',
       description:
         listing.description ?? product.description ?? '',

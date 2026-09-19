@@ -334,11 +334,16 @@ const productImageUrl =
       typeof productData.imageUrls[0] === "string"
     ? productData.imageUrls[0]
     : null;
-
+console.log('=== DROPSYNC SAVE DEBUG ===');
+console.log('TITLE:', title);
+console.log('DESCRIPTION:', description);
+console.log('DESCRIPTION LENGTH:', description?.length);
+console.log('==========================');
 await this.prisma.listing.create({
   data: {
     storeId: job.storeId,
     title,
+    description,
     sku,
     price: offerPrice,
     quantity: 1,

@@ -232,6 +232,7 @@ async publishAiListing(
     imageUrls?: string[];
     brand?: string;
     mpn?: string;
+    supplierUrl?: string;
     aspects?: Record<string, string[]>;
   },
 ) {
@@ -338,6 +339,18 @@ await this.prisma.listing.create({
     externalUrl: null,
   },
 });
+
+if (body.supplierUrl) {
+  await this.prisma.importHistory.create({
+    data: {
+      storeId: body.storeId,
+      supplierUrl: body.supplierUrl,
+      title: body.title,
+      marketplace: 'EBAY',
+      status: 'COMPLETED',
+    },
+  });
+}
   return {
     inventoryResult,
     offerResult,
