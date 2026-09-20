@@ -149,6 +149,7 @@ export default function ListingsPage() {
                     <th className="px-4 py-3">Marketplace</th>
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">eBay Item ID</th>
+                    <th className="px-4 py-3">Actions</th>
                   </tr>
                 </thead>
 
@@ -231,6 +232,33 @@ export default function ListingsPage() {
   ) : (
     listing.externalId ?? "—"
   )}
+</td>
+<td className="px-4 py-4">
+  <div className="flex gap-2">
+    <a
+      href={`/dashboard/listings/${listing.id}`}
+      onClick={(e) => e.stopPropagation()}
+      className="rounded bg-slate-600 px-3 py-1 text-sm font-medium text-white hover:bg-slate-700"
+    >
+      View
+    </a>
+
+    <a
+      href={`/dashboard/listings/${listing.id}/edit`}
+      onClick={(e) => e.stopPropagation()}
+      className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
+    >
+      Edit
+    </a>
+
+    <a
+      href={`/dashboard/listings/${listing.id}/optimize`}
+      onClick={(e) => e.stopPropagation()}
+      className="rounded bg-purple-600 px-3 py-1 text-sm font-medium text-white hover:bg-purple-700"
+    >
+      Optimize
+    </a>
+  </div>
 </td>
                     </tr>
                   ))}
