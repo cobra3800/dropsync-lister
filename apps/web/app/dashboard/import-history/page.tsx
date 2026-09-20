@@ -34,13 +34,17 @@ export default function ImportHistoryPage() {
         throw new Error("Unable to load import history.");
       }
 
-      const data: unknown = await response.json();
+      const data = await response.json();
 
-      if (!Array.isArray(data)) {
-        throw new Error("The server returned an invalid response.");
-      }
+const items = Array.isArray(data)
+  ? data
+  : Array.isArray(data?.items)
+    ? data.items
+    : Array.isArray(data?.history)
+      ? data.history
+      : [];
 
-      setHistory(data as ImportHistoryItem[]);
+setHistory(items as ImportHistoryItem[]);
     } catch (caught) {
       setError(
         caught instanceof Error
