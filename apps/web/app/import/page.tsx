@@ -307,6 +307,7 @@ async function clearCompletedQueue() {
 }
 
   async function handleOptimizeClick() {
+    console.log('OPTIMIZE BUTTON CLICKED');
     if (!product || !listing) {
       setError('Import a product and generate a listing first.');
       return;
@@ -324,6 +325,7 @@ async function clearCompletedQueue() {
       const data = await readJson(response);
       if (!response.ok) throw new Error(messageFrom(data, 'Unable to optimize listing'));
       setListing({ ...listing, ...(data as Listing) });
+      alert('✨ Listing optimized successfully!');
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to optimize listing');
     } finally {
