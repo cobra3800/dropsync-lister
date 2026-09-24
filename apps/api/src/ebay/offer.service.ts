@@ -88,9 +88,18 @@ export class OfferService {
       accessToken =
         await this.ebayService.refreshAccessToken(storeId);
     }
-
+console.log('CREATE OFFER INPUT:', {
+  storeId,
+  sku,
+  marketplaceId,
+  categoryId,
+  merchantLocationKey,
+  fulfillmentPolicyId,
+  paymentPolicyId,
+  returnPolicyId,
+});
     const response = await fetch(
-  'https://api.sandbox.ebay.com/sell/inventory/v1/offer',
+  'https://api.ebay.com/sell/inventory/v1/offer',
   {
     method: 'POST',
     headers: {
@@ -158,7 +167,7 @@ async publishOffer(input: {
   }
 
   const response = await fetch(
-    `https://api.sandbox.ebay.com/sell/inventory/v1/offer/${input.offerId}/publish`,
+    `https://api.ebay.com/sell/inventory/v1/offer/${input.offerId}/publish`,
     {
       method: 'POST',
     headers: {
@@ -169,7 +178,7 @@ async publishOffer(input: {
       },
     },
   );
-
+console.log('EBAY PUBLISH STATUS:', response.status);
   const responseText = await response.text();
 
 const ebayResult = responseText
@@ -215,7 +224,7 @@ async getOfferBySku(storeId: string, sku: string) {
   }
 
   const response = await fetch(
-    `https://api.sandbox.ebay.com/sell/inventory/v1/offer?sku=${encodeURIComponent(
+    `https://api.ebay.com/sell/inventory/v1/offer?sku=${encodeURIComponent(
       sku,
     )}`,
     {
@@ -269,7 +278,7 @@ async updatePriceQuantity(input: {
   }
 
   const response = await fetch(
-    'https://api.sandbox.ebay.com/sell/inventory/v1/bulk_update_price_quantity',
+    'https://api.ebay.com/sell/inventory/v1/bulk_update_price_quantity',
     {
       method: 'POST',
       headers: {
@@ -330,7 +339,7 @@ async createPaymentPolicy(storeId: string) {
   }
 
   const response = await fetch(
-    'https://api.sandbox.ebay.com/sell/account/v1/payment_policy',
+    'https://api.ebay.com/sell/account/v1/payment_policy',
     {
       method: 'POST',
       headers: {

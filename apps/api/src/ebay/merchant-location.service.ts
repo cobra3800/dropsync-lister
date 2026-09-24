@@ -44,7 +44,7 @@ export class MerchantLocationService {
     }
 
     const response = await fetch(
-      'https://api.sandbox.ebay.com/sell/inventory/v1/location',
+      'https://api.ebay.com/sell/inventory/v1/location',
       {
         method: 'GET',
         headers: {

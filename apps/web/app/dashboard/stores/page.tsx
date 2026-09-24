@@ -103,11 +103,31 @@ async function handleDeleteStore(storeId: string, storeName: string) {
         </p>
       )}
 
-      {!loading && !error && stores.length === 0 && (
-        <p style={{ color: '#94a3b8' }}>
-          No connected stores found.
-        </p>
-      )}
+      {!loading && !error && (
+  <div>
+    <p style={{ color: '#94a3b8', marginBottom: '16px' }}>
+      No connected stores found.
+    </p>
+
+    <button
+      onClick={() => {
+        window.location.href =
+          'http://localhost:4000/ebay/connect?storeId=cmucyeton0000fj5o3qgbd0ot';
+      }}
+      style={{
+        background: '#2563eb',
+        color: 'white',
+        border: 'none',
+        borderRadius: '8px',
+        padding: '12px 20px',
+        fontWeight: 700,
+        cursor: 'pointer',
+      }}
+    >
+      Connect eBay
+    </button>
+  </div>
+)}
 
       {stores.map((store) => {
   const isActiveSandbox =

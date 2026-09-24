@@ -97,7 +97,7 @@ model EbayAccount {
   id           String    @id @default(cuid())
   storeId      String    @unique
   ebayUserId   String?
-  environment  String    @default("sandbox")
+  environment  String    @default("production")
   accessToken  String?
   refreshToken String?
   expiresAt    DateTime?

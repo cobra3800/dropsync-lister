@@ -171,7 +171,11 @@ console.log(
     const returnPolicyId =
       returnData.returnPolicies?.[0]
         ?.returnPolicyId ?? '';
-
+console.log('SELECTED EBAY POLICY IDS:', {
+  fulfillmentPolicyId,
+  paymentPolicyId,
+  returnPolicyId,
+});
     if (
       !fulfillmentPolicyId ||
       !paymentPolicyId ||
@@ -210,7 +214,13 @@ console.log(
       Number.isFinite(rawPrice) && rawPrice > 0
         ? rawPrice
         : 19.99;
-
+console.log('PRICE DEBUG:', {
+  listingPrice: listingData.price,
+  productPrice: productData.price,
+  rawPrice,
+  offerPrice,
+  offerPriceType: typeof offerPrice,
+});
     const title =
       generatedListing.title ||
       productData.title ||
@@ -274,7 +284,7 @@ console.log(
         format: 'FIXED_PRICE',
         availableQuantity: 1,
         categoryId,
-        merchantLocationKey: 'main',
+        merchantLocationKey: '06e35b16-b94e-4a1c-ab52-dcfa8082f41c',
         price: offerPrice,
         currency: 'USD',
         fulfillmentPolicyId,
@@ -352,7 +362,7 @@ await this.prisma.listing.create({
 imageUrl: productImageUrl,
 externalId: listingId,
 externalUrl: listingId
-  ? `https://sandbox.ebay.com/itm/${listingId}`
+  ? `https://www.ebay.com/itm/${listingId}`
   : null,
   },
 });

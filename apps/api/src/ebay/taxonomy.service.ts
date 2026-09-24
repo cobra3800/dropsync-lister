@@ -15,7 +15,7 @@ export class TaxonomyService {
       await this.ebayService.refreshAccessToken(storeId);
 console.log('EBAY CATEGORY QUERY TITLE:', title);
     const response = await fetch(
-      `https://api.sandbox.ebay.com/commerce/taxonomy/v1/category_tree/0/get_category_suggestions?q=${encodeURIComponent(
+      `https://api.ebay.com/commerce/taxonomy/v1/category_tree/0/get_category_suggestions?q=${encodeURIComponent(
         title,
       )}`,
       {

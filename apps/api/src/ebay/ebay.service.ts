@@ -48,7 +48,7 @@ export class EbayService {
       ].join(' '),
     });
 
-    return `https://auth.sandbox.ebay.com/oauth2/authorize?${params.toString()}`;
+    return `https://auth.ebay.com/oauth2/authorize?${params.toString()}`;
   }
 
   async exchangeAuthorizationCode(
@@ -71,7 +71,7 @@ export class EbayService {
     });
 
     const response = await fetch(
-      'https://api.sandbox.ebay.com/identity/v1/oauth2/token',
+      'https://api.ebay.com/identity/v1/oauth2/token',
       {
         method: 'POST',
         headers: {
@@ -112,7 +112,7 @@ export class EbayService {
       expiresAt: new Date(
         Date.now() + tokens.expires_in * 1000,
       ),
-      environment: process.env.EBAY_ENV ?? 'sandbox',
+      environment: process.env.EBAY_ENV ?? 'production',
       scope: tokens.scope ?? '',
     });
 
@@ -146,7 +146,7 @@ export class EbayService {
     }
 
     const response = await fetch(
-      'https://api.sandbox.ebay.com/identity/v1/oauth2/token',
+      'https://api.ebay.com/identity/v1/oauth2/token',
       {
         method: 'POST',
         headers: {
@@ -208,7 +208,7 @@ export class EbayService {
     }
 
     const response = await fetch(
-      'https://api.sandbox.ebay.com/sell/account/v1/program/get_opted_in_programs',
+      'https://api.ebay.com/sell/account/v1/program/get_opted_in_programs',
       {
         method: 'GET',
         headers: {
@@ -259,7 +259,7 @@ export class EbayService {
   };
 
   const baseUrl =
-    'https://api.sandbox.ebay.com/sell/account/v1';
+    'https://api.ebay.com/sell/account/v1';
 
   const [paymentResponse, returnResponse, fulfillmentResponse] =
     await Promise.all([
@@ -318,7 +318,7 @@ async optInToBusinessPolicies(storeId: string) {
   }
 
   const response = await fetch(
-    'https://api.sandbox.ebay.com/sell/account/v1/program/opt_in',
+    'https://api.ebay.com/sell/account/v1/program/opt_in',
     {
       method: 'POST',
       headers: {
@@ -375,7 +375,7 @@ async optInToBusinessPolicies(storeId: string) {
   }
 
   const response = await fetch(
-    'https://api.sandbox.ebay.com/sell/account/v1/payment_policy',
+    'https://api.ebay.com/sell/account/v1/payment_policy',
     {
       method: 'POST',
       headers: {
@@ -399,7 +399,8 @@ async optInToBusinessPolicies(storeId: string) {
   );
 
   const responseText = await response.text();
-
+console.log('EBAY PAYMENT POLICY STATUS:', response.status);
+console.log('EBAY PAYMENT POLICY RESPONSE:', responseText);
 let result: unknown = null;
 
 if (responseText) {
@@ -410,7 +411,7 @@ if (responseText) {
   }
 }
 const returnResponse = await fetch(
-  'https://api.sandbox.ebay.com/sell/account/v1/return_policy',
+  'https://api.ebay.com/sell/account/v1/return_policy',
   {
     method: 'POST',
     headers: {
@@ -439,7 +440,8 @@ const returnResponse = await fetch(
   },
 );
 const returnResponseText = await returnResponse.text();
-
+console.log('EBAY RETURN POLICY STATUS:', returnResponse.status);
+console.log('EBAY RETURN POLICY RESPONSE:', returnResponseText);
 let returnResult: unknown = null;
 
 if (returnResponseText) {
@@ -483,7 +485,7 @@ async createFulfillmentPolicy(storeId: string) {
   }
 
  const response = await fetch(
-  'https://api.sandbox.ebay.com/sell/account/v1/fulfillment_policy',
+  'https://api.ebay.com/sell/account/v1/fulfillment_policy',
   {
     method: 'POST',
     headers: {
@@ -560,7 +562,7 @@ let result: unknown = null;
     }
 
     const response = await fetch(
-      'https://api.sandbox.ebay.com/sell/account/v1/payment_policy',
+      'https://api.ebay.com/sell/account/v1/payment_policy',
       {
         method: 'POST',
         headers: {
@@ -614,7 +616,7 @@ let result: unknown = null;
     }
 
     const response = await fetch(
-      'https://api.sandbox.ebay.com/sell/account/v1/return_policy',
+      'https://api.ebay.com/sell/account/v1/return_policy',
       {
         method: 'POST',
         headers: {

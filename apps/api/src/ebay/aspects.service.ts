@@ -34,7 +34,7 @@ export class AspectsService {
       await this.ebayService.refreshAccessToken(storeId);
 
     const response = await fetch(
-      `https://api.sandbox.ebay.com/commerce/taxonomy/v1/category_tree/0/get_item_aspects_for_category?category_id=${encodeURIComponent(
+      `https://api.ebay.com/commerce/taxonomy/v1/category_tree/0/get_item_aspects_for_category?category_id=${encodeURIComponent(
         categoryId,
       )}`,
       {

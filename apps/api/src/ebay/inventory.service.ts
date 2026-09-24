@@ -291,7 +291,7 @@ console.log('Request body:', JSON.stringify({
 }, null, 2));
     
 const existingResponse = await fetch(
-  `https://api.sandbox.ebay.com/sell/inventory/v1/inventory_item/${encodeURIComponent(
+  `https://api.ebay.com/sell/inventory/v1/inventory_item/${encodeURIComponent(
     sku,
   )}`,
   {
@@ -350,7 +350,7 @@ const existingShipAvailability =
     ? existingAvailability.shipToLocationAvailability
     : {};
 const response = await fetch(
-      `https://api.sandbox.ebay.com/sell/inventory/v1/inventory_item/${encodeURIComponent(sku)}`,
+      `https://api.ebay.com/sell/inventory/v1/inventory_item/${encodeURIComponent(sku)}`,
       {
         method: 'PUT',
         headers: {
@@ -446,7 +446,7 @@ private async importImageToEbay(
   );
 
   const response = await fetch(
-    'https://apim.sandbox.ebay.com/commerce/media/v1_beta/image/create_image_from_file',
+    'https://apim.ebay.com/commerce/media/v1_beta/image/create_image_from_file',
     {
       method: 'POST',
       headers: {
@@ -501,7 +501,7 @@ private async importImageToEbay(
     }
 
     const response = await fetch(
-  `https://api.sandbox.ebay.com/sell/inventory/v1/location/${encodeURIComponent(
+  `https://api.ebay.com/sell/inventory/v1/location/${encodeURIComponent(
     input.locationKey,
   )}`,
   {

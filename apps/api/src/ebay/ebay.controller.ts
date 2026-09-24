@@ -19,6 +19,7 @@ import { TaxonomyService } from './taxonomy.service.js';
 import { AspectsService } from './aspects.service.js';
 import { createHash } from 'node:crypto';
 import { PrismaService } from '../prisma.service';
+import { EbayAccountRepository } from './repositories/ebay-account.repository';
 
 @Controller('ebay')
 export class EbayController {
@@ -30,6 +31,7 @@ export class EbayController {
   private readonly taxonomyService: TaxonomyService,
   private readonly aspectsService: AspectsService,
   private readonly prisma: PrismaService,
+  private readonly ebayAccountRepository: EbayAccountRepository,
 ) {}
 
   @Get('connect')
@@ -41,7 +43,15 @@ export class EbayController {
       this.ebayService.getConnectUrl(storeId),
     );
   }
+@Post('disconnect')
+async disconnect(@Body('storeId') storeId: string) {
+  await this.ebayAccountRepository.disconnect(storeId);
 
+  return {
+    success: true,
+    message: 'eBay account disconnected',
+  };
+}
   @Get('callback')
 async callback(
   @Query('code') code?: string,
@@ -62,7 +72,14 @@ async callback(
     };
   }
 
+  try {
   await this.ebayService.exchangeAuthorizationCode(code, storeId);
+} catch (err: any) {
+  console.error('EBAY CALLBACK ERROR:', err);
+  console.error('EBAY CALLBACK RESPONSE:', err?.response);
+  console.error('EBAY CALLBACK MESSAGE:', err?.message);
+  throw err;
+}
 
   return {
     connected: true,
@@ -293,7 +310,7 @@ if (!fulfillmentPolicyId || !paymentPolicyId || !returnPolicyId) {
     sku: body.sku,
     availableQuantity: body.quantity,
     categoryId: body.categoryId,
-    merchantLocationKey: "main",
+    merchantLocationKey: "06e35b16-b94e-4a1c-ab52-dcfa8082f41c",
     price: body.price,
     fulfillmentPolicyId,
 paymentPolicyId,
@@ -365,7 +382,7 @@ handleAccountDeletionChallenge(
   const verificationToken = 'DropSyncVerificationToken20260001';
 
   const endpoint =
-  'https://acceptance-approved-injuries-trend.trycloudflare.com/ebay/account-deletion';
+  'https://hypothetical-sorry-passport-contacted.trycloudflare.com/ebay/account-deletion';
 
   const challengeResponse = createHash('sha256')
     .update(challengeCode)

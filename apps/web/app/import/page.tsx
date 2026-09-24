@@ -843,7 +843,7 @@ const response = await fetch(
 
 {job.listingId ? (
   <a
-    href={`https://sandbox.ebay.com/itm/${job.listingId}`}
+    href={`https://www.ebay.com/itm/${job.listingId}`}
     target="_blank"
     rel="noreferrer"
     className="mt-3 inline-block rounded bg-blue-600 px-3 py-1 text-sm font-medium hover:bg-blue-700"

@@ -177,7 +177,7 @@ const inventoryUpdateResponse = await fetch(
   storeId,
   sku: sku.trim(),
   title: title.trim(),
-  description: description.trim(),
+  description: description.trim() || title.trim(),
   quantity: parsedQuantity,
   condition,
   imageUrls: imageUrl ? [imageUrl] : [],
