@@ -307,7 +307,6 @@ async function clearCompletedQueue() {
 }
 
   async function handleOptimizeClick() {
-    console.log('OPTIMIZE BUTTON CLICKED');
     if (!product || !listing) {
       setError('Import a product and generate a listing first.');
       return;
