@@ -361,6 +361,7 @@ await this.prisma.listing.create({
     status: 'ACTIVE',
 imageUrl: productImageUrl,
 externalId: listingId,
+ebayItemId: listingId,
 externalUrl: listingId
   ? `https://www.ebay.com/itm/${listingId}`
   : null,
@@ -381,13 +382,23 @@ externalUrl: listingId
       },
     });
       } catch (error: unknown) {
-      const message =
-        error instanceof Error ? error.message : 'Unknown import error';
+  const message =
+    error instanceof Error ? error.message : 'Unknown import error';
 
-      console.error('Import queue processing failed:', error);
+  console.error('Import queue processing failed:', error);
 
-      throw new Error(message);
-    }
+  await this.prisma.importQueue.update({
+    where: {
+      id: job.id,
+    },
+    data: {
+      status: 'FAILED',
+      error: message,
+    },
+  });
+
+  throw new Error(message);
+}
   }
   async clearCompleted() {
   return this.prisma.importQueue.deleteMany({

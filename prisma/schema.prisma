@@ -180,6 +180,7 @@ model Listing {
   category    String?
   imageUrl    String?
   externalId  String?
+  ebayItemId  String?
   externalUrl String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

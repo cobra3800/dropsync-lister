@@ -47,10 +47,7 @@ export class InventoryService {
   mpn,
   aspects,
 } = input;
-    const condition = (rawCondition ?? 'NEW')
-  .trim()
-  .toUpperCase()
-  .replace(/[\s-]+/g, '_');
+    const condition = 'NEW';
 
     if (!storeId || !sku || !title || !description) {
       throw new BadRequestException(

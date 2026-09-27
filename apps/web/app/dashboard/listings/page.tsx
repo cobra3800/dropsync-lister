@@ -12,6 +12,7 @@ type Listing = {
   status: string;
   imageUrl: string | null;
   externalId: string | null;
+  ebayItemId: string | null;
   externalUrl: string | null;
   createdAt: string;
   updatedAt: string;
@@ -230,7 +231,7 @@ export default function ListingsPage() {
       View on eBay
     </a>
   ) : (
-    listing.externalId ?? "—"
+    listing.ebayItemId ?? listing.externalId ?? "-"
   )}
 </td>
 <td className="px-4 py-4">
