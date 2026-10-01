@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: "⌂" },
   { label: "Listings", href: "/dashboard/listings", icon: "▦" },
+  { label: "Orders", href: "/dashboard/orders", icon: "📦" },
   { label: "Import History", href: "/dashboard/import-history", icon: "↻" },
   { label: "AI Optimizer", href: "/ai-generator", icon: "✦" },
   { label: "Import Product", href: "/import", icon: "↓" },
