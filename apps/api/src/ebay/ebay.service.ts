@@ -31,7 +31,21 @@ export class EbayService {
 
     return value;
   }
+  async getAccessToken(storeId: string): Promise<string> {
+    const account = await this.ebayRepository.findByStore(storeId);
 
+    if (!account?.accessToken) {
+      throw new BadRequestException(
+        'No eBay access token exists. Reconnect the store.',
+      );
+    }
+
+    if (!account.expiresAt || account.expiresAt <= new Date()) {
+      return this.refreshAccessToken(storeId);
+    }
+
+    return account.accessToken;
+  }
   getConnectUrl(storeId: string): string {
     const clientId = this.getRequiredEnv('EBAY_CLIENT_ID');
     const ruName = this.getRequiredEnv('EBAY_RUNAME');
@@ -45,6 +59,7 @@ export class EbayService {
         'https://api.ebay.com/oauth/api_scope',
         'https://api.ebay.com/oauth/api_scope/sell.inventory',
         'https://api.ebay.com/oauth/api_scope/sell.account',
+        'https://api.ebay.com/oauth/api_scope/sell.fulfillment',
       ].join(' '),
     });
 
@@ -660,4 +675,29 @@ let result: unknown = null;
       result,
     };
   }
+async getOrders(storeId: string) {
+  const accessToken = await this.getAccessToken(storeId);
+
+  const response = await fetch(
+    'https://api.ebay.com/sell/fulfillment/v1/order?limit=50',
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    },
+  );
+
+  const responseText = await response.text();
+
+  if (!response.ok) {
+    throw new BadRequestException(
+      `Unable to fetch eBay orders: ${response.status} ${responseText}`,
+    );
+  }
+
+  return responseText ? JSON.parse(responseText) : { orders: [] };
+}
+
 } // closes EbayService

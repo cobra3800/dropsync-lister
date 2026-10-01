@@ -10,7 +10,7 @@ import { AiModule } from './ai/ai.module.js';
 import { ListingDraftsModule } from './listing-drafts/listing-drafts.module';
 import { EbayModule } from './ebay/ebay.module.js';
 import { PublishHistoryModule } from './publish-history/publish-history.module.js';
-
+import { OrdersModule } from './orders/orders.module';
 @Module({
   imports: [
   AuthModule,
@@ -22,6 +22,7 @@ import { PublishHistoryModule } from './publish-history/publish-history.module.j
   EbayModule,
   PublishHistoryModule,
   ListingsModule,
+  OrdersModule,
 ],
   controllers: [AppController],
   providers: [PrismaService],

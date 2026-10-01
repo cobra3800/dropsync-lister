@@ -10,6 +10,7 @@ type Listing = {
   category: string | null;
   imageUrl: string | null;
   externalId: string | null;
+  ebayItemId: string | null;
   externalUrl: string | null;
   createdAt: string;
   updatedAt: string;
@@ -204,9 +205,9 @@ export default async function ListingDetails({
   Optimize with AI
 </a>
 
-              {listing.externalUrl ? (
+              {(listing.externalUrl || listing.ebayItemId || listing.externalId) ? (
                 <a
-                  href={listing.externalUrl}
+                  href={listing.externalUrl || `https://www.ebay.com/itm/${listing.ebayItemId || listing.externalId}`}
                   target="_blank"
                   rel="noreferrer"
                   className="rounded-lg bg-slate-700 px-5 py-3 font-semibold hover:bg-slate-600"

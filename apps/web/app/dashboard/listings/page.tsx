@@ -220,9 +220,9 @@ export default function ListingsPage() {
                       </td>
 
                       <td className="px-4 py-4 text-slate-300">
-  {listing.externalUrl ? (
+  {(listing.externalUrl || listing.ebayItemId) ? (
     <a
-      href={listing.externalUrl}
+      href={listing.externalUrl || `https://www.ebay.com/itm/${listing.ebayItemId}`}
       target="_blank"
       rel="noreferrer"
       onClick={(e) => e.stopPropagation()}
