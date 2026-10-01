@@ -11,7 +11,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-
+const [orders, setOrders] = useState<any[]>([]);
   useEffect(() => {
     fetch(`${API_URL}/auth/me`, { credentials: 'include' })
       .then(async (response) => {
@@ -22,6 +22,13 @@ export default function DashboardPage() {
       .catch(() => router.replace('/login'))
       .finally(() => setLoading(false));
   }, [router]);
+
+  useEffect(() => {
+  fetch(`${API_URL}/orders`, { credentials: 'include' })
+    .then((response) => response.json())
+    .then((data) => setOrders(Array.isArray(data) ? data : []))
+    .catch(() => setOrders([]));
+}, []);
 
   async function logout() {
     await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
@@ -98,7 +105,7 @@ export default function DashboardPage() {
         {[
           ["Connected Store","1","eBay Connected"],
           ["Inventory","1","Ready"],
-          ["Listings","1","Published"],
+          ["Orders", String(orders.length), orders.length === 1 ? "Order" : "Orders"],
           ["Membership",user.role,"Active"]
         ].map(([title,value,note])=>(
 
