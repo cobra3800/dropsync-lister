@@ -61,7 +61,37 @@ export default function ListingsPage() {
   useEffect(() => {
     void loadListings();
   }, [loadListings]);
+const syncEbayListings = async () => {
+  console.log("REFRESH BUTTON CLICKED");
+  setLoading(true);
+  setError("");
 
+  try {
+    const response = await fetch(`${API_URL}/listings/sync/ebay`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        storeId: "cmucyeton0000fj5o3qgbd0ot",
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Unable to sync eBay listings.");
+    }
+
+    await loadListings();
+  } catch (caught) {
+    setError(
+      caught instanceof Error
+        ? caught.message
+        : "Unable to sync eBay listings.",
+    );
+  } finally {
+    setLoading(false);
+  }
+};
   const filteredListings = useMemo(() => {
     const query = search.trim().toLowerCase();
 
@@ -117,7 +147,7 @@ export default function ListingsPage() {
 
               <button
                 type="button"
-                onClick={() => void loadListings()}
+                onClick={() => void syncEbayListings()}
                 disabled={loading}
                 className="rounded-lg bg-blue-600 px-4 py-2 font-semibold hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >

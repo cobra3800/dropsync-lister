@@ -690,6 +690,8 @@ async getOrders(storeId: string) {
   );
 
   const responseText = await response.text();
+  console.log('EBAY ORDERS STATUS:', response.status);
+console.log('EBAY ORDERS RESPONSE:', responseText);
   if (!response.ok) {
     throw new BadRequestException(
       `Unable to fetch eBay orders: ${response.status} ${responseText}`,
@@ -697,6 +699,30 @@ async getOrders(storeId: string) {
   }
 
   return responseText ? JSON.parse(responseText) : { orders: [] };
+}
+
+async getListingStatus(storeId: string, itemId: string) {
+const accessToken = await this.getAccessToken(storeId);
+const response = await fetch(
+  `https://api.ebay.com/buy/browse/v1/item/v1|${itemId}|0`,
+  {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  },
+);
+if (!response.ok) {
+  const errorText = await response.text();
+  console.log(
+    'EBAY LISTING STATUS ERROR:',
+    response.status,
+    itemId,
+    errorText,
+  );
+
+  return { status: 'ENDED' };
+}
+return { status: 'ACTIVE' };
 }
 
 } // closes EbayService

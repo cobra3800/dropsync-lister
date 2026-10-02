@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Patch,
+Post,
 } from '@nestjs/common';
 import { ListingsService } from './listings.service.js';
 
@@ -29,5 +30,9 @@ update(
   @Body() body: Record<string, unknown>,
 ) {
   return this.listingsService.update(id, body);
+}
+@Post('sync/ebay')
+syncEbayStatuses(@Body('storeId') storeId: string) {
+  return this.listingsService.syncStatusesFromEbay(storeId);
 }
 }
