@@ -12,6 +12,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 const [orders, setOrders] = useState<any[]>([]);
+const [listings, setListings] = useState<any[]>([]);
+const [stores, setStores] = useState<any[]>([]);
   useEffect(() => {
     fetch(`${API_URL}/auth/me`, { credentials: 'include' })
       .then(async (response) => {
@@ -29,7 +31,18 @@ const [orders, setOrders] = useState<any[]>([]);
     .then((data) => setOrders(Array.isArray(data) ? data : []))
     .catch(() => setOrders([]));
 }, []);
-
+useEffect(() => {
+  fetch(`${API_URL}/listings`, { credentials: 'include' })
+    .then((response) => response.json())
+    .then((data) => setListings(Array.isArray(data) ? data : []))
+    .catch(() => setListings([]));
+}, []);
+useEffect(() => {
+  fetch(`${API_URL}/stores`, { credentials: 'include' })
+    .then((response) => response.json())
+    .then((data) => setStores(Array.isArray(data) ? data : []))
+    .catch(() => setStores([]));
+}, []);
   async function logout() {
     await fetch(`${API_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
     router.replace('/login');
@@ -103,8 +116,8 @@ const [orders, setOrders] = useState<any[]>([]);
       <div className="mt-10 grid gap-6 lg:grid-cols-4">
 
         {[
-          ["Connected Store","1","eBay Connected"],
-          ["Inventory","1","Ready"],
+          ["Connected Store", String(stores.length), stores.length > 0 ? "eBay Connected" : "No Store Connected"],
+          ["Inventory", String(listings.length), listings.length === 1 ? "Listing" : "Listings"],
           ["Orders", String(orders.length), orders.length === 1 ? "Order" : "Orders"],
           ["Membership",user.role,"Active"]
         ].map(([title,value,note])=>(
