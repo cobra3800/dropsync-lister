@@ -14,5 +14,4 @@ getOrders() {
     return this.ordersService.syncFromEbay(storeId);
   }
 
-
 }
