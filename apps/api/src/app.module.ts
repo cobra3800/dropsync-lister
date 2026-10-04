@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ImporterModule } from './importer/importer.module.js';
 import { ListingsModule } from './listings/listings.module.js';
 import { AppController } from './app.controller.js';
