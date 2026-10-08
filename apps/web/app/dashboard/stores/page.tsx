@@ -103,11 +103,8 @@ async function handleDeleteStore(storeId: string, storeName: string) {
         </p>
       )}
 
-      {!loading && !error && (
+      {!loading && !error && stores.length === 0 && (
   <div>
-    <p style={{ color: '#94a3b8', marginBottom: '16px' }}>
-      No connected stores found.
-    </p>
 
     <button
       onClick={() => {
@@ -130,8 +127,6 @@ async function handleDeleteStore(storeId: string, storeName: string) {
 )}
 
       {stores.map((store) => {
-  const isActiveSandbox =
-    store.id === 'cmr15cccm000173wqjiv5kfmj';
 
   const hasEbayAccount = Boolean((store as any).ebayAccount);
 
@@ -159,16 +154,14 @@ async function handleDeleteStore(storeId: string, storeName: string) {
 
       <p
         style={{
-          color: isActiveSandbox ? '#22c55e' : '#f59e0b',
+          color: hasEbayAccount ? '#22c55e' : '#f59e0b',
           marginBottom: '8px',
           fontWeight: 600,
         }}
       >
-        {isActiveSandbox
-          ? 'Active eBay Sandbox'
-          : hasEbayAccount
-            ? 'Connected'
-            : 'Incomplete / Old Store Record'}
+        {hasEbayAccount
+  ? 'Connected'
+  : 'Incomplete / Old Store Record'}
       </p>
 
       <p style={{ color: '#94a3b8', marginBottom: '6px' }}>
@@ -181,7 +174,7 @@ async function handleDeleteStore(storeId: string, storeName: string) {
   </p>
 )}
 
-{!isActiveSandbox && !hasEbayAccount && (
+{!hasEbayAccount && (
   <button
     type="button"
     onClick={() =>

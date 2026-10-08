@@ -25,7 +25,21 @@ const [syncing, setSyncing] = useState(false);
       .then((data) => setOrders(data))
       .catch((error) => console.error("Failed to load orders:", error));
   }, []);
+const handleRefreshOrders = async () => {
+  try {
+    const response = await fetch("http://localhost:4000/orders");
 
+    if (!response.ok) {
+      throw new Error("Failed to refresh orders");
+    }
+
+    const data = await response.json();
+    setOrders(data);
+    setSyncMessage(`Orders refreshed — ${data.length} order(s) found.`);
+  } catch (error) {
+    console.error("Failed to refresh orders:", error);
+  }
+};
   const handleSyncEbay = async () => {
     setSyncing(true);
 setSyncMessage("");
@@ -72,6 +86,12 @@ setSyncMessage("");
 >
   {syncing ? "Syncing..." : "Sync eBay Orders"}
 </button>
+<button
+  onClick={handleRefreshOrders}
+  className="ml-3 rounded bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
+>
+  Refresh Orders
+</button>
 {syncMessage && (
   <p className="mt-3 text-sm text-gray-600">{syncMessage}</p>
 )}
@@ -84,7 +104,9 @@ setSyncMessage("");
               <div className="font-semibold">
                 {order.title || order.externalOrderId}
               </div>
-
+<div className="text-sm text-gray-500">
+  Order ID: {order.externalOrderId}
+</div>
               <div>Status: {order.status}</div>
               <div>Quantity: {order.quantity}</div>
               <div>

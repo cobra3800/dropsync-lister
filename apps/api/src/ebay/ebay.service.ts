@@ -711,8 +711,16 @@ const response = await fetch(
     },
   },
 );
+const responseText = await response.text();
+const ebayItem = responseText ? JSON.parse(responseText) : {};
+console.log('EBAY ITEM FIELDS:', Object.keys(ebayItem));
+console.log('EBAY ITEM:', ebayItem);
+console.log('EBAY ITEM URL:', ebayItem.itemWebUrl);
+console.log('EBAY ITEM LOT SIZE:', ebayItem.lotSize);
+console.log('EBAY ITEM QUANTITY:', ebayItem.quantity);
+console.log('EBAY ITEM AVAILABILITY:', ebayItem.estimatedAvailabilities);
 if (!response.ok) {
-  const errorText = await response.text();
+  const errorText = responseText;
   console.log(
     'EBAY LISTING STATUS ERROR:',
     response.status,

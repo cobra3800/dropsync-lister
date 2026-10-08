@@ -316,9 +316,9 @@ async updatePriceQuantity(input: {
 
   if (!response.ok) {
     console.error(
-      'eBay price/quantity update failed:',
-      ebayResult,
-    );
+  'eBay price/quantity update failed:',
+  JSON.stringify(ebayResult, null, 2),
+);
 
     throw new BadRequestException(ebayResult);
   }

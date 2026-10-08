@@ -81,7 +81,18 @@ useEffect(() => {
           <button
             key={item}
             onClick={() => {
-  if (item === "Inventory") window.location.href = "/dashboard/listings";
+  const routes: Record<string, string> = {
+    Dashboard: "/dashboard",
+    Inventory: "/dashboard/listings",
+    Listings: "/dashboard/listings",
+    "AI Generator": "/dashboard/listings/optimize",
+    Publish: "/import",
+    Analytics: "/dashboard/analytics",
+    Settings: "/dashboard/stores",
+  };
+
+  const route = routes[item];
+  if (route) window.location.href = route;
 }}
             className="w-full rounded-lg px-4 py-3 text-left hover:bg-slate-800"
           >

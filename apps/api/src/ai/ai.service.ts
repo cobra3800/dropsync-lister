@@ -214,7 +214,7 @@ Current listing:
 ${JSON.stringify(listing, null, 2)}
         `.trim(),
       });
-
+console.log('AI OPTIMIZE RAW RESPONSE:', response.output_text);
     try {
       const optimized = JSON.parse(
         response.output_text,
