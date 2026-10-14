@@ -28,6 +28,11 @@ export class OrdersService {
     },
   });
 }
+async findOne(id: string) {
+  return this.prisma.order.findUnique({
+    where: { id },
+  });
+}
 async syncFromEbay(storeId: string) {
   const ebayResponse = await this.ebayService.getOrders(storeId);
   const orders = ebayResponse.orders ?? [];

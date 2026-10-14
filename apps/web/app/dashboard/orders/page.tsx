@@ -279,9 +279,12 @@ export default function OrdersPage() {
         <div className="space-y-4">
           {filteredOrders.map((order) => (
             <div
-              key={order.id}
-              className="rounded-xl border bg-white p-5 shadow-sm"
-            >
+  key={order.id}
+  onClick={() => {
+    window.location.href = `/dashboard/orders/${order.id}`;
+  }}
+  className="rounded-xl border bg-white p-5 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
