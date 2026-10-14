@@ -7,6 +7,20 @@ export class OrdersService {
   private readonly prisma: PrismaService,
   private readonly ebayService: EbayService,
 ) {}
+
+  
+  async checkDatabase() {
+    const result = await this.prisma.$queryRawUnsafe<
+      { seq: bigint; name: string; file: string }[]
+    >('PRAGMA database_list');
+
+    return result.map((db) => ({
+      name: db.name,
+      file: db.file,
+    }));
+  }
+
+
   async findAll() {
   return this.prisma.order.findMany({
     orderBy: {
@@ -19,6 +33,12 @@ async syncFromEbay(storeId: string) {
   const orders = ebayResponse.orders ?? [];
 
   for (const order of orders) {
+    console.log('ORDER STATUS CHECK:', {
+  orderId: order.orderId,
+  fulfillmentStatus: order.orderFulfillmentStatus,
+  cancelStatus: order.cancelStatus,
+  paymentStatus: order.orderPaymentStatus,
+});
     const lineItem = order.lineItems?.[0];
     const shipping = order.fulfillmentStartInstructions?.[0]?.shippingStep?.shipTo;
 
@@ -30,7 +50,10 @@ async syncFromEbay(storeId: string) {
         buyerUsername: order.buyer?.username ?? null,
         buyerName: shipping?.fullName ?? null,
         buyerEmail: order.buyer?.buyerRegistrationAddress?.email ?? null,
-        status: order.orderFulfillmentStatus ?? 'PENDING',
+        status:
+  order.cancelStatus?.cancelState === 'CANCELED'
+    ? 'CANCELED'
+    : order.orderFulfillmentStatus ?? 'PENDING',
         total: Number(order.pricingSummary?.total?.value ?? 0),
         currency: order.pricingSummary?.total?.currency ?? 'USD',
         itemId: lineItem?.legacyItemId ?? null,
@@ -58,7 +81,10 @@ async syncFromEbay(storeId: string) {
         buyerUsername: order.buyer?.username ?? null,
         buyerName: shipping?.fullName ?? null,
         buyerEmail: order.buyer?.buyerRegistrationAddress?.email ?? null,
-        status: order.orderFulfillmentStatus ?? 'PENDING',
+        status:
+  order.cancelStatus?.cancelState === 'CANCELED'
+    ? 'CANCELED'
+    : order.orderFulfillmentStatus ?? 'PENDING',
         total: Number(order.pricingSummary?.total?.value ?? 0),
         currency: order.pricingSummary?.total?.currency ?? 'USD',
         itemId: lineItem?.legacyItemId ?? null,

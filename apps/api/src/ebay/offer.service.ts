@@ -314,14 +314,45 @@ async updatePriceQuantity(input: {
     ? JSON.parse(responseText)
     : {};
 
-  if (!response.ok) {
-    console.error(
-  'eBay price/quantity update failed:',
-  JSON.stringify(ebayResult, null, 2),
+  const errors = [
+  ...(Array.isArray(ebayResult?.errors)
+    ? ebayResult.errors
+    : []),
+  ...(Array.isArray(ebayResult?.responses)
+    ? ebayResult.responses.flatMap((response: any) =>
+        Array.isArray(response?.errors)
+          ? response.errors
+          : [],
+      )
+    : []),
+];
+
+const endedListing = errors.some(
+  (error: { errorId?: number; message?: string }) =>
+    error.errorId === 25002 &&
+    /ended item/i.test(error.message ?? ''),
 );
 
-    throw new BadRequestException(ebayResult);
-  }
+if (endedListing) {
+  throw new BadRequestException({
+    message:
+      'This eBay listing has ended and cannot be edited. Create a new listing or relist the item.',
+    code: 'EBAY_LISTING_ENDED',
+  });
+}
+
+if (!response.ok || errors.length > 0) {
+  console.error(
+    'eBay price/quantity update failed:',
+    JSON.stringify(ebayResult, null, 2),
+  );
+
+  throw new BadRequestException({
+    message: 'eBay rejected the price/quantity update.',
+    errors,
+    ebayResult,
+  });
+}
 
   console.log(
     'eBay price/quantity update succeeded:',

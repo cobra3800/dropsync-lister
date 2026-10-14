@@ -214,16 +214,26 @@ if (!inventoryUpdateResponse.ok) {
   );
 
   if (!ebayUpdateResponse.ok) {
-    const ebayError = await ebayUpdateResponse
-      .json()
-      .catch(() => null);
+  const ebayError = await ebayUpdateResponse
+    .json()
+    .catch(() => null);
 
-    throw new Error(
-      typeof ebayError?.message === "string"
-        ? ebayError.message
-        : "Unable to update eBay listing.",
-    );
-  }
+  console.log(
+  "eBay update HTTP status:",
+  ebayUpdateResponse.status,
+  "Response:",
+  ebayError,
+);
+
+  const message =
+    typeof ebayError?.message === "string"
+      ? ebayError.message
+      : typeof ebayError?.message?.message === "string"
+        ? ebayError.message.message
+        : "Unable to update eBay listing.";
+
+  throw new Error(message);
+}
 }
       router.push(`/dashboard/listings/${id}`);
       router.refresh();

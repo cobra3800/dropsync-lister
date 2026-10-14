@@ -113,11 +113,13 @@ export class ImportQueueService {
     });
 
     // 3. Find the best eBay category.
-    const categorySuggestions =
-      await this.taxonomyService.suggestCategory(
-        job.storeId,
-        generatedListing.title,
-      );
+    const categorySearchTitle = generatedListing.title;
+
+const categorySuggestions =
+  await this.taxonomyService.suggestCategory(
+    job.storeId,
+    categorySearchTitle || generatedListing.title,
+  );
 console.log(
   'EBAY CATEGORY SUGGESTIONS:',
   JSON.stringify(categorySuggestions, null, 2),

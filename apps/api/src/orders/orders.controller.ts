@@ -9,6 +9,12 @@ export class OrdersController {
 getOrders() {
   return this.ordersService.findAll();
 }
+
+  @Get('check-database')
+  checkDatabase() {
+    return this.ordersService.checkDatabase();
+  }
+
   @Post('sync/ebay')
   syncEbay(@Body('storeId') storeId: string) {
     return this.ordersService.syncFromEbay(storeId);

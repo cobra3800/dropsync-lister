@@ -35,14 +35,17 @@ export class ListingsService {
 
   async syncStatusesFromEbay(storeId: string) {
     console.log('SYNC STATUSES STARTED:', storeId);
+
 const listings = await this.prisma.listing.findMany({
   where: {
+    storeId: storeId,
     marketplace: 'EBAY',
     externalId: {
       not: null,
     },
   },
 });
+
 console.log('EBAY LISTINGS FOUND:', listings.length);
 for (const listing of listings) {
   console.log('CHECKING EBAY LISTING:', listing.externalId);

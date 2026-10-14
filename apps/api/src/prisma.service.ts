@@ -16,7 +16,7 @@ export class PrismaService
   }
 
   async onModuleInit(): Promise<void> {
-    await this.$connect();
+    await this.$connect();  
   }
 
   async onModuleDestroy(): Promise<void> {

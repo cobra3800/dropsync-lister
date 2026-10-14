@@ -720,17 +720,19 @@ console.log('EBAY ITEM LOT SIZE:', ebayItem.lotSize);
 console.log('EBAY ITEM QUANTITY:', ebayItem.quantity);
 console.log('EBAY ITEM AVAILABILITY:', ebayItem.estimatedAvailabilities);
 if (!response.ok) {
-  const errorText = responseText;
-  console.log(
+  console.error(
     'EBAY LISTING STATUS ERROR:',
     response.status,
     itemId,
-    errorText,
+    responseText,
   );
 
-  return { status: 'ENDED' };
+  throw new Error(
+    `Unable to verify eBay listing ${itemId}: HTTP ${response.status}`,
+  );
 }
+
 return { status: 'ACTIVE' };
 }
 
-} // closes EbayService
+} // closes getListingStatus
