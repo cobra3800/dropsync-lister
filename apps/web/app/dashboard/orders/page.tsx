@@ -298,7 +298,7 @@ const paginatedOrders = sortedOrders.slice(
         <select
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value)}
-          className="rounded-lg border bg-white px-4 py-3 text-gray-900"
+          className="rounded-lg border border-purple-300 bg-purple-50 px-4 py-3 font-medium text-purple-900 shadow-sm hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-purple-400"
         >
           <option value="ALL">All Statuses</option>
           {statuses.map((status) => (
@@ -313,7 +313,7 @@ const paginatedOrders = sortedOrders.slice(
   <select
     value={shippingFilter}
     onChange={(event) => setShippingFilter(event.target.value)}
-    className="rounded-lg border bg-white px-4 py-3 text-gray-900"
+    className="rounded-lg border border-green-300 bg-green-50 px-4 py-3 font-medium text-green-900 shadow-sm hover:bg-green-100 focus:outline-none focus:ring-2 focus:ring-green-400"
   >
     <option value="ALL">All Shipping Statuses</option>
     <option value="NOT_SHIPPED">Not Shipped</option>
@@ -325,7 +325,8 @@ const paginatedOrders = sortedOrders.slice(
   <select
     value={sortOrder}
     onChange={(event) => setSortOrder(event.target.value)}
-    className="rounded-lg border bg-white px-4 py-3 text-gray-900"
+    className="rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 font-medium text-blue-900 shadow-sm hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-400"
+
   >
     <option value="NEWEST">Newest First</option>
     <option value="OLDEST">Oldest First</option>
