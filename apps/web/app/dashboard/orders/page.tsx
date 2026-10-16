@@ -56,6 +56,8 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [shippingFilter, setShippingFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState("NEWEST");
+  const [currentPage, setCurrentPage] = useState(1);
+const [pageSize, setPageSize] = useState(10);
   const [syncing, setSyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -187,6 +189,17 @@ const sortedOrders = useMemo(() => {
     return dateB - dateA;
   });
 }, [filteredOrders, sortOrder]);
+const totalPages = Math.max(
+  1,
+  Math.ceil(sortedOrders.length / pageSize)
+);
+
+const safeCurrentPage = Math.min(currentPage, totalPages);
+
+const paginatedOrders = sortedOrders.slice(
+  (safeCurrentPage - 1) * pageSize,
+  safeCurrentPage * pageSize
+);
   const activeOrders = orders.filter(
     (order) => !order.status.toUpperCase().includes("CANCEL")
   );
@@ -330,7 +343,7 @@ const sortedOrders = useMemo(() => {
         </div>
       ) : (
         <div className="space-y-4">
-          {sortedOrders.map((order) => (
+          {paginatedOrders.map((order) => (
             <div
   key={order.id}
   onClick={() => {
@@ -412,6 +425,51 @@ const sortedOrders = useMemo(() => {
           ))}
         </div>
       )}
+      
+{!loading && sortedOrders.length > 0 && (
+  <div className="mt-6 flex items-center justify-between gap-4">
+    <button
+      type="button"
+      onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+      disabled={safeCurrentPage === 1}
+      className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Previous
+    </button>
+
+    <span className="text-sm font-medium text-gray-700">
+      Page {safeCurrentPage} of {totalPages}
+    </span>
+
+<label className="flex items-center gap-2 text-sm text-gray-700">
+  Orders per page:
+  <select
+    value={pageSize}
+    onChange={(event) => {
+      setPageSize(Number(event.target.value));
+      setCurrentPage(1);
+    }}
+    className="rounded-lg border bg-white px-3 py-2 text-gray-900"
+  >
+    <option value={10}>10</option>
+    <option value={25}>25</option>
+    <option value={50}>50</option>
+  </select>
+</label>
+
+    <button
+      type="button"
+      onClick={() =>
+        setCurrentPage((page) => Math.min(totalPages, page + 1))
+      }
+      disabled={safeCurrentPage === totalPages}
+      className="rounded-lg bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Next
+    </button>
+  </div>
+)}
+
     </div>
   );
 }
