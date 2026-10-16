@@ -36,6 +36,7 @@ export default function OrderDetailsPage() {
   const [error, setError] = useState("");
 
 const [shippingCarrier, setShippingCarrier] = useState("");
+const [fulfillmentStatus, setFulfillmentStatus] = useState("NOT_SHIPPED");
 const [trackingNumber, setTrackingNumber] = useState("");
 const [savingShipping, setSavingShipping] = useState(false);
 
@@ -65,6 +66,7 @@ const [savingShipping, setSavingShipping] = useState(false);
         setOrder(data);
         
 setShippingCarrier(data.shippingCarrier ?? "");
+setFulfillmentStatus(data.fulfillmentStatus || "NOT_SHIPPED");
 setTrackingNumber(data.trackingNumber ?? "");
 
       } catch (err) {
@@ -96,9 +98,10 @@ async function handleSaveShipping() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          shippingCarrier,
-          trackingNumber,
-        }),
+  shippingCarrier,
+  trackingNumber,
+  fulfillmentStatus,
+}),
       }
     );
 
@@ -234,7 +237,21 @@ async function handleSaveShipping() {
       className="w-full rounded-lg border p-3"
     />
   </div>
+<div>
+  <label className="block mb-2">
+    Fulfillment Status
+  </label>
 
+  <select
+    value={fulfillmentStatus}
+    onChange={(e) => setFulfillmentStatus(e.target.value)}
+    className="w-full rounded-lg border p-3"
+  >
+    <option value="NOT_SHIPPED">Not Shipped</option>
+    <option value="SHIPPED">Shipped</option>
+    <option value="DELIVERED">Delivered</option>
+  </select>
+</div>
   <button
     type="button"
     onClick={handleSaveShipping}

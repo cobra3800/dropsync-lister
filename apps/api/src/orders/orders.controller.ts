@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Param } from '@nestjs/common';
+
+import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 
 @Controller('orders')
@@ -21,4 +22,18 @@ getOrderById(@Param('id') id: string) {
   syncEbay(@Body('storeId') storeId: string) {
     return this.ordersService.syncFromEbay(storeId);
   }
+  
+@Patch(':id/shipping')
+updateShipping(
+  @Param('id') id: string,
+  @Body()
+  data: {
+    shippingCarrier?: string;
+    trackingNumber?: string;
+    fulfillmentStatus?: string;
+  },
+) {
+  return this.ordersService.updateShipping(id, data);
+}
+
 }
