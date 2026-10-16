@@ -13,32 +13,31 @@ model User {
   name          String
   passwordHash  String
   role          String         @default("MEMBER")
-  memberships   Membership[]
-  auditLogs     AuditLog[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  auditLogs     AuditLog[]
   listingDrafts ListingDraft[]
+  memberships   Membership[]
 }
 
 model Organization {
   id            String         @id @default(cuid())
   name          String
-  memberships   Membership[]
-  stores        Store[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   listingDrafts ListingDraft[]
+  memberships   Membership[]
+  stores        Store[]
 }
 
 model Membership {
-  id             String   @id @default(cuid())
+  id             String       @id @default(cuid())
   userId         String
   organizationId String
-  role           String   @default("MEMBER")
-  createdAt      DateTime @default(now())
-
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  role           String       @default("MEMBER")
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, organizationId])
 }
@@ -49,48 +48,43 @@ model AuditLog {
   action    String
   metadata  String?
   createdAt DateTime @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?    @relation(fields: [userId], references: [id])
 }
 
 model Store {
-  id             String       @id @default(cuid())
+  id             String           @id @default(cuid())
   organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  ebayAccount    EbayAccount?
   name           String
   marketplace    String
-  status         String       @default("CONNECTED")
-
-  listingDrafts  ListingDraft[]
-  publishHistory PublishHistory[]
-  importQueue    ImportQueue[]
+  status         String           @default("CONNECTED")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  ebayAccount    EbayAccount?
   importHistory  ImportHistory[]
+  importQueue    ImportQueue[]
   listings       Listing[]
+  listingDrafts  ListingDraft[]
   orders         Order[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  publishHistory PublishHistory[]
+  organization   Organization     @relation(fields: [organizationId], references: [id])
 }
 
 model ListingDraft {
-  id             String  @id @default(cuid())
-  organizationId String
-  storeId        String?
-  createdById    String
-
+  id              String       @id @default(cuid())
+  organizationId  String
+  storeId         String?
+  createdById     String
   title           String
   description     String
   keywords        String
   itemSpecifics   String
   priceSuggestion Float?
-  status          String @default("DRAFT")
-
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  store        Store?       @relation(fields: [storeId], references: [id], onDelete: SetNull)
-  createdBy    User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status          String       @default("DRAFT")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  createdBy       User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  store           Store?       @relation(fields: [storeId], references: [id])
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model EbayAccount {
@@ -103,47 +97,37 @@ model EbayAccount {
   expiresAt    DateTime?
   scope        String?
   connectedAt  DateTime?
-
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  store        Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
 }
 
 model PublishHistory {
-  id         String  @id @default(cuid())
+  id         String   @id @default(cuid())
   storeId    String
   title      String
   ebayItemId String?
   status     String
   error      String?
-
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  store      Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([storeId])
   @@index([status])
 }
 
 model ImportQueue {
-  id String @id @default(cuid())
-
-  storeId String
-
+  id          String   @id @default(cuid())
+  storeId     String
   supplierUrl String
-
-  status   String @default("PENDING")
-  progress Int    @default(0)
-
-  title String?
-  error String?
-  listingId String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  status      String   @default("PENDING")
+  progress    Int      @default(0)
+  title       String?
+  error       String?
+  listingId   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([storeId])
   @@index([status])
@@ -158,8 +142,7 @@ model ImportHistory {
   status      String   @default("COMPLETED")
   error       String?
   createdAt   DateTime @default(now())
-
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([storeId])
   @@index([status])
@@ -180,12 +163,11 @@ model Listing {
   category    String?
   imageUrl    String?
   externalId  String?
-  ebayItemId  String?
   externalUrl String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  ebayItemId  String?
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([storeId])
   @@index([marketplace])
@@ -210,10 +192,14 @@ model Order {
   quantity        Int      @default(1)
   shippingName    String?
   shippingAddress String?
+  shippingCarrier    String?
+trackingNumber     String?
+fulfillmentStatus  String?
+shippedAt          DateTime?
+deliveredAt        DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
 
   @@index([storeId])
   @@index([status])

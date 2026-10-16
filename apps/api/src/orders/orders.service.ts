@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { EbayService } from '../ebay/ebay.service.js';
 @Injectable()
@@ -120,4 +123,41 @@ async syncFromEbay(storeId: string) {
 
 
 }
+
+async updateShipping(
+  id: string,
+  data: {
+    shippingCarrier?: string;
+    trackingNumber?: string;
+    fulfillmentStatus?: string;
+  },
+) {
+  const order = await this.prisma.order.findUnique({
+    where: { id },
+  });
+
+  if (!order) {
+    throw new Error('Order not found');
+  }
+
+  if (order.status === 'CANCELED') {
+    throw new BadRequestException(
+  'Cannot update shipping on a canceled order',
+);
+  }
+
+  return this.prisma.order.update({
+    where: { id },
+    data: {
+      shippingCarrier: data.shippingCarrier,
+      trackingNumber: data.trackingNumber,
+      fulfillmentStatus: data.fulfillmentStatus,
+      shippedAt:
+        data.fulfillmentStatus === 'SHIPPED'
+          ? new Date()
+          : undefined,
+    },
+  });
+}
+
 }

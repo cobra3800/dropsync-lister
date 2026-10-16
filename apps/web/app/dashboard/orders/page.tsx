@@ -13,7 +13,9 @@ type Order = {
   currency: string;
   title?: string;
   quantity: number;
-  createdAt: string;
+createdAt: string;
+shippingCarrier?: string | null;
+trackingNumber?: string | null;
 };
 
 const API_URL =
@@ -322,7 +324,25 @@ export default function OrdersPage() {
                     "Not available"}
                 </div>
               </div>
+              {(order.shippingCarrier || order.trackingNumber) && (
+  <div className="mt-3 border-t pt-3 text-sm text-gray-700">
+    {order.shippingCarrier && (
+      <p>
+        <span className="font-semibold">Shipping Carrier: </span>
+        {order.shippingCarrier}
+      </p>
+    )}
+
+    {order.trackingNumber && (
+      <p>
+        <span className="font-semibold">Tracking Number: </span>
+        {order.trackingNumber}
+      </p>
+    )}
+  </div>
+)}
             </div>
+
           ))}
         </div>
       )}

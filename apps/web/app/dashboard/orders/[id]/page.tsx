@@ -17,8 +17,13 @@ type Order = {
   buyerUsername?: string;
   buyerEmail?: string;
   shippingName?: string;
-  shippingAddress?: string;
-  createdAt: string;
+  
+shippingAddress?: string;
+shippingCarrier?: string | null;
+trackingNumber?: string | null;
+fulfillmentStatus?: string | null;
+createdAt: string;
+
 };
 
 export default function OrderDetailsPage() {
@@ -29,6 +34,10 @@ export default function OrderDetailsPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+const [shippingCarrier, setShippingCarrier] = useState("");
+const [trackingNumber, setTrackingNumber] = useState("");
+const [savingShipping, setSavingShipping] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -54,6 +63,10 @@ export default function OrderDetailsPage() {
         }
 
         setOrder(data);
+        
+setShippingCarrier(data.shippingCarrier ?? "");
+setTrackingNumber(data.trackingNumber ?? "");
+
       } catch (err) {
         setError("Unable to load order details.");
       } finally {
@@ -63,6 +76,45 @@ export default function OrderDetailsPage() {
 
     loadOrder();
   }, [id]);
+
+async function handleSaveShipping() {
+  if (!order || savingShipping) return;
+
+  setSavingShipping(true);
+  setError("");
+
+  try {
+    const apiUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:4000";
+
+    const response = await fetch(
+      `${apiUrl}/orders/${encodeURIComponent(order.id)}/shipping`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          shippingCarrier,
+          trackingNumber,
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to save shipping");
+    }
+
+    const updatedOrder = await response.json();
+    setOrder(updatedOrder);
+    alert("Shipping information saved!");
+  } catch (err) {
+    alert("Unable to save shipping information.");
+  } finally {
+    setSavingShipping(false);
+  }
+}
 
   if (loading) {
     return <div className="p-6">Loading order...</div>;
@@ -155,6 +207,44 @@ export default function OrderDetailsPage() {
           <strong>Address:</strong> {order.shippingAddress || "Not available"}
         </p>
       </div>
+    
+<div className="rounded-xl border bg-white p-6 space-y-4">
+  <h2 className="text-xl font-semibold">
+    Shipping & Tracking
+  </h2>
+
+  <div>
+    <label className="block mb-2">Shipping Carrier</label>
+    <input
+      type="text"
+      value={shippingCarrier}
+      onChange={(e) => setShippingCarrier(e.target.value)}
+      placeholder="USPS, UPS, FedEx"
+      className="w-full rounded-lg border p-3"
+    />
+  </div>
+
+  <div>
+    <label className="block mb-2">Tracking Number</label>
+    <input
+      type="text"
+      value={trackingNumber}
+      onChange={(e) => setTrackingNumber(e.target.value)}
+      placeholder="Enter tracking number"
+      className="w-full rounded-lg border p-3"
+    />
+  </div>
+
+  <button
+    type="button"
+    onClick={handleSaveShipping}
+    disabled={savingShipping}
+    className="rounded-lg bg-blue-600 px-5 py-3 text-white disabled:opacity-50"
+  >
+    {savingShipping ? "Saving..." : "Save Shipping"}
+  </button>
+</div>
+
     </div>
   );
 }
