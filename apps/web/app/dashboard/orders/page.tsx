@@ -54,6 +54,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [shippingFilter, setShippingFilter] = useState("ALL");
   const [syncing, setSyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -144,22 +145,27 @@ export default function OrdersPage() {
     [orders]
   );
 
-  const filteredOrders = useMemo(() => {
-    const term = search.toLowerCase().trim();
+const filteredOrders = useMemo(() => {
+  const term = search.toLowerCase().trim();
 
-    return orders.filter((order) => {
-      const matchesSearch =
-        !term ||
-        (order.title || "").toLowerCase().includes(term) ||
-        order.externalOrderId.toLowerCase().includes(term) ||
-        (order.buyerUsername || "").toLowerCase().includes(term);
+  return orders.filter((order) => {
+    const matchesSearch =
+      !term ||
+      (order.title || "").toLowerCase().includes(term) ||
+      order.externalOrderId.toLowerCase().includes(term) ||
+      (order.buyerUsername || "").toLowerCase().includes(term);
 
-      const matchesStatus =
-        statusFilter === "ALL" || order.status === statusFilter;
+    const matchesStatus =
+      statusFilter === "ALL" || order.status === statusFilter;
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [orders, search, statusFilter]);
+    const matchesShipping =
+      shippingFilter === "ALL" ||
+      (order.fulfillmentStatus || "NOT_SHIPPED") === shippingFilter;
+
+    return matchesSearch && matchesStatus && matchesShipping;
+  });
+}, [orders, search, statusFilter, shippingFilter]);
+
 
   const activeOrders = orders.filter(
     (order) => !order.status.toUpperCase().includes("CANCEL")
@@ -269,6 +275,19 @@ export default function OrdersPage() {
           ))}
         </select>
       </div>
+
+<div className="mb-4">
+  <select
+    value={shippingFilter}
+    onChange={(event) => setShippingFilter(event.target.value)}
+    className="rounded-lg border bg-white px-4 py-3 text-gray-900"
+  >
+    <option value="ALL">All Shipping Statuses</option>
+    <option value="NOT_SHIPPED">Not Shipped</option>
+    <option value="SHIPPED">Shipped</option>
+    <option value="DELIVERED">Delivered</option>
+  </select>
+</div>
 
       {loading ? (
         <p className="text-gray-500">Loading orders...</p>
