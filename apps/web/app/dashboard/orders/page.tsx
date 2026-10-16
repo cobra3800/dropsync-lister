@@ -55,6 +55,7 @@ export default function OrdersPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [shippingFilter, setShippingFilter] = useState("ALL");
+  const [sortOrder, setSortOrder] = useState("NEWEST");
   const [syncing, setSyncing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -166,7 +167,26 @@ const filteredOrders = useMemo(() => {
   });
 }, [orders, search, statusFilter, shippingFilter]);
 
+const sortedOrders = useMemo(() => {
+  return [...filteredOrders].sort((a, b) => {
+    if (sortOrder === "HIGHEST") {
+      return Number(b.total) - Number(a.total);
+    }
 
+    if (sortOrder === "LOWEST") {
+      return Number(a.total) - Number(b.total);
+    }
+
+    const dateA = new Date(a.createdAt).getTime();
+    const dateB = new Date(b.createdAt).getTime();
+
+    if (sortOrder === "OLDEST") {
+      return dateA - dateB;
+    }
+
+    return dateB - dateA;
+  });
+}, [filteredOrders, sortOrder]);
   const activeOrders = orders.filter(
     (order) => !order.status.toUpperCase().includes("CANCEL")
   );
@@ -288,7 +308,18 @@ const filteredOrders = useMemo(() => {
     <option value="DELIVERED">Delivered</option>
   </select>
 </div>
-
+<div className="mb-4">
+  <select
+    value={sortOrder}
+    onChange={(event) => setSortOrder(event.target.value)}
+    className="rounded-lg border bg-white px-4 py-3 text-gray-900"
+  >
+    <option value="NEWEST">Newest First</option>
+    <option value="OLDEST">Oldest First</option>
+    <option value="HIGHEST">Highest Price</option>
+    <option value="LOWEST">Lowest Price</option>
+  </select>
+</div>
       {loading ? (
         <p className="text-gray-500">Loading orders...</p>
       ) : filteredOrders.length === 0 ? (
@@ -299,7 +330,7 @@ const filteredOrders = useMemo(() => {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredOrders.map((order) => (
+          {sortedOrders.map((order) => (
             <div
   key={order.id}
   onClick={() => {
