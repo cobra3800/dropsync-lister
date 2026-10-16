@@ -16,6 +16,7 @@ type Order = {
 createdAt: string;
 shippingCarrier?: string | null;
 trackingNumber?: string | null;
+fulfillmentStatus?: string | null;
 };
 
 const API_URL =
@@ -302,6 +303,21 @@ export default function OrdersPage() {
                 >
                   {order.status}
                 </span>
+                <span
+  className={`ml-2 rounded-full px-3 py-1 text-xs font-semibold ${
+    order.fulfillmentStatus === "DELIVERED"
+      ? "bg-purple-100 text-purple-700"
+      : order.fulfillmentStatus === "SHIPPED"
+      ? "bg-green-100 text-green-700"
+      : "bg-yellow-100 text-yellow-800"
+  }`}
+>
+  {order.fulfillmentStatus === "DELIVERED"
+    ? "Delivered"
+    : order.fulfillmentStatus === "SHIPPED"
+    ? "Shipped"
+    : "Not Shipped"}
+</span>
               </div>
 
               <div className="mt-4 grid grid-cols-1 gap-3 text-sm text-gray-700 sm:grid-cols-3">
