@@ -56,6 +56,7 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [shippingFilter, setShippingFilter] = useState("ALL");
   const [sortOrder, setSortOrder] = useState("NEWEST");
+
   const [currentPage, setCurrentPage] = useState(1);
 const [pageSize, setPageSize] = useState(10);
   const [syncing, setSyncing] = useState(false);
@@ -63,7 +64,13 @@ const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(true);
   const [syncMessage, setSyncMessage] = useState("");
   const [error, setError] = useState("");
-
+const resetFilters = () => {
+  setSearch("");
+  setStatusFilter("ALL");
+  setShippingFilter("ALL");
+  setSortOrder("NEWEST");
+  setCurrentPage(1);
+};
   const loadOrders = async () => {
     const response = await fetch(`${API_URL}/orders`, {
       cache: "no-store",
@@ -333,6 +340,15 @@ const paginatedOrders = sortedOrders.slice(
     <option value="HIGHEST">Highest Price</option>
     <option value="LOWEST">Lowest Price</option>
   </select>
+</div>
+<div className="mb-4">
+  <button
+    type="button"
+    onClick={resetFilters}
+    className="rounded-lg bg-red-50 border border-red-300 px-4 py-3 font-medium text-red-900 shadow-sm hover:bg-red-100"
+  >
+    Reset Filters
+  </button>
 </div>
       {loading ? (
         <p className="text-gray-500">Loading orders...</p>
