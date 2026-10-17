@@ -294,13 +294,28 @@ const paginatedOrders = sortedOrders.slice(
       )}
 
       <div className="flex flex-col gap-3 md:flex-row">
-        <input
-          type="text"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search orders, products, buyers..."
-          className="w-full rounded-lg border bg-white px-4 py-3 text-gray-900 md:flex-1"
-        />
+        
+<div className="relative w-full md:flex-1">
+  <input
+    type="text"
+    value={search}
+    onChange={(event) => setSearch(event.target.value)}
+    placeholder="Search orders, products, buyers..."
+    className="w-full rounded-lg border bg-white px-4 py-3 pr-12 text-gray-900"
+  />
+
+  {search && (
+    <button
+      type="button"
+      onClick={() => setSearch("")}
+      aria-label="Clear search"
+      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full px-2 py-1 text-gray-500 hover:bg-gray-100 hover:text-red-600"
+    >
+      ✕
+    </button>
+  )}
+</div>
+
 
         <select
           value={statusFilter}
