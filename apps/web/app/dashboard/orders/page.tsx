@@ -221,7 +221,8 @@ const paginatedOrders = sortedOrders.slice(
     {}
   );
 
-const awaitingShipment = activeOrders.filter((order) => {
+
+const ordersAwaitingShipment = activeOrders.filter((order) => {
   const fulfillment = (order.fulfillmentStatus || "").toUpperCase();
   const status = (order.status || "").toUpperCase();
 
@@ -233,7 +234,10 @@ const awaitingShipment = activeOrders.filter((order) => {
     Boolean(order.trackingNumber?.trim());
 
   return !shipped;
-}).length;
+});
+
+const awaitingShipment = ordersAwaitingShipment.length;
+
 
   return (
     <div className="p-6 space-y-6">
@@ -288,6 +292,53 @@ const awaitingShipment = activeOrders.filter((order) => {
 </div>
 
       </div>
+
+<div className="rounded-xl border border-orange-200 bg-orange-50 p-5 shadow-sm">
+  <h2 className="text-lg font-bold text-orange-800">
+    Orders Needing Attention
+  </h2>
+
+  <p className="mt-1 text-sm text-orange-700">
+    Orders that are waiting to be shipped.
+  </p>
+
+  <div className="mt-3 text-2xl font-bold text-orange-600">
+    {awaitingShipment}
+  </div>
+
+  <p className="mt-2 text-sm text-gray-600">
+    {awaitingShipment === 0
+      ? "All active orders appear to be shipped."
+      : `${awaitingShipment} order(s) may need shipping attention.`}
+  </p>
+  
+{ordersAwaitingShipment.length > 0 && (
+  <div className="mt-4 space-y-3">
+    {ordersAwaitingShipment.map((order) => (
+      <div
+        key={order.id}
+        className="rounded-lg border border-orange-200 bg-white p-4"
+      >
+        <p className="font-semibold text-gray-900">
+          {order.title}
+        </p>
+
+        <p className="mt-1 text-sm text-gray-600">
+          Order ID: {order.externalOrderId}
+        </p>
+
+        <a
+          href={`/dashboard/orders/${encodeURIComponent(order.id)}`}
+          className="mt-2 inline-block text-sm font-medium text-blue-600 hover:underline"
+        >
+          View Order Details →
+        </a>
+      </div>
+    ))}
+  </div>
+)}
+
+</div>
 
       <div className="flex flex-wrap gap-3">
         <button
