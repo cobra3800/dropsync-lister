@@ -457,7 +457,15 @@ const paginatedOrders = sortedOrders.slice(
     <span className="text-sm font-medium text-gray-700">
       Page {safeCurrentPage} of {totalPages}
     </span>
-
+<span className="text-sm font-medium text-gray-600">
+  Showing{" "}
+  {filteredOrders.length === 0
+    ? 0
+    : (safeCurrentPage - 1) * pageSize + 1}
+  –
+  {Math.min(safeCurrentPage * pageSize, filteredOrders.length)}
+  {" "}of {filteredOrders.length} orders
+</span>
 <label className="flex items-center gap-2 text-sm text-gray-700">
   Orders per page:
   <select
