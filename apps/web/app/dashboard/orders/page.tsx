@@ -221,6 +221,20 @@ const paginatedOrders = sortedOrders.slice(
     {}
   );
 
+const awaitingShipment = activeOrders.filter((order) => {
+  const fulfillment = (order.fulfillmentStatus || "").toUpperCase();
+  const status = (order.status || "").toUpperCase();
+
+  const shipped =
+    fulfillment.includes("SHIPPED") ||
+    fulfillment.includes("FULFILLED") ||
+    status.includes("SHIPPED") ||
+    status.includes("FULFILLED") ||
+    Boolean(order.trackingNumber?.trim());
+
+  return !shipped;
+}).length;
+
   return (
     <div className="p-6 space-y-6">
       <div>
@@ -232,7 +246,9 @@ const paginatedOrders = sortedOrders.slice(
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      
+<div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+
         <div className="rounded-xl border bg-white p-5 shadow-sm">
           <p className="text-sm text-gray-500">Total Orders</p>
           <p className="mt-2 text-3xl font-bold">{orders.length}</p>
@@ -261,6 +277,16 @@ const paginatedOrders = sortedOrders.slice(
                 )}
           </div>
         </div>
+      
+<div className="rounded-xl border bg-white p-5 shadow-sm">
+  <p className="text-sm text-gray-500">
+    Awaiting Shipment
+  </p>
+  <p className="mt-2 text-3xl font-bold text-orange-600">
+    {awaitingShipment}
+  </p>
+</div>
+
       </div>
 
       <div className="flex flex-wrap gap-3">
