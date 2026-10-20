@@ -145,7 +145,20 @@ async updateShipping(
   'Cannot update shipping on a canceled order',
 );
   }
+const isTestOrder =
+  order.externalOrderId?.startsWith('DROPSYNC-') ?? false;
 
+const isTestTracking =
+  data.trackingNumber
+    ?.trim()
+    .toUpperCase()
+    .startsWith('DROPSYNC-TEST-') ?? false;
+
+if (!isTestOrder && isTestTracking) {
+  throw new BadRequestException(
+    'Test tracking numbers cannot be used on real orders.',
+  );
+}
   return this.prisma.order.update({
     where: { id },
     data: {

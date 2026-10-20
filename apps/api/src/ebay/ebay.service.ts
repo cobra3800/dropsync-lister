@@ -735,4 +735,61 @@ if (!response.ok) {
 return { status: 'ACTIVE' };
 }
 
+
+async createShippingFulfillment(
+  storeId: string,
+  ebayOrderId: string,
+  shippingCarrier: string,
+  trackingNumber: string,
+) {
+  if (
+    !storeId ||
+    !ebayOrderId ||
+    !shippingCarrier?.trim() ||
+    !trackingNumber?.trim()
+  ) {
+    throw new BadRequestException(
+      'Missing shipping fulfillment information',
+    );
+  }
+
+if (
+  trackingNumber.trim().toUpperCase().startsWith('DROPSYNC-TEST-')
+) {
+  throw new BadRequestException(
+    'Test tracking numbers cannot be submitted to eBay.',
+  );
+}
+
+  const accessToken = await this.getAccessToken(storeId);
+
+  const response = await fetch(
+    `https://api.ebay.com/sell/fulfillment/v1/order/${encodeURIComponent(ebayOrderId)}/shipping_fulfillment`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        shippingCarrierCode: shippingCarrier.trim(),
+        trackingNumber: trackingNumber.trim(),
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new BadRequestException(
+      `eBay shipping fulfillment failed: ${response.status} ${errorText}`,
+    );
+  }
+
+  return {
+    success: true,
+    status: response.status,
+  };
+}
+
+
 } // closes getListingStatus
