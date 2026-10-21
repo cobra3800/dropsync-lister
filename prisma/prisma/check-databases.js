@@ -16,7 +16,9 @@ for (const path of paths) {
 
     const rows = db
       .prepare(
-        'SELECT externalOrderId, status, shippingCarrier, trackingNumber, shippedAt FROM "Order" WHERE externalOrderId = ?'
+    
+'SELECT externalOrderId, buyerName, shippingName, shippingAddress, status, fulfillmentStatus, shippingCarrier, trackingNumber FROM "Order" WHERE externalOrderId = ?'
+
       )
       .all("DROPSYNC-SHIPPING-TEST-001");
 
