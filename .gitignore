@@ -13,3 +13,12 @@ apps/api/.env.backup
 
 # Local Prisma database
 prisma/prisma/dev.db
+
+# SQLite databases and backups
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# Local shipping test script
+prisma/test-shipping.js
