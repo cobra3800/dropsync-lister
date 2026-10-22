@@ -162,14 +162,20 @@ if (!isTestOrder && isTestTracking) {
   return this.prisma.order.update({
     where: { id },
     data: {
-      shippingCarrier: data.shippingCarrier,
-      trackingNumber: data.trackingNumber,
-      fulfillmentStatus: data.fulfillmentStatus,
-      shippedAt:
-        data.fulfillmentStatus === 'SHIPPED'
-          ? new Date()
-          : undefined,
-    },
+  shippingCarrier: data.shippingCarrier,
+  trackingNumber: data.trackingNumber,
+  fulfillmentStatus: data.fulfillmentStatus,
+
+  shippedAt:
+  data.fulfillmentStatus === 'SHIPPED' && !order.shippedAt
+    ? new Date()
+    : undefined,
+
+  deliveredAt:
+  data.fulfillmentStatus === 'DELIVERED' && !order.deliveredAt
+    ? new Date()
+    : undefined,
+},
   });
 }
 
