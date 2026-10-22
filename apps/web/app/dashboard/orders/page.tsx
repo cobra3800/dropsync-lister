@@ -26,7 +26,9 @@ const STORE_ID = "cmucyeton0000fj5o3qgbd0ot";
 
 function statusColor(status: string) {
   const value = status.toUpperCase();
-
+if (value.includes("DELIVERED")) {
+  return "bg-emerald-100 text-emerald-800";
+}
   if (value.includes("CANCEL")) {
     return "bg-red-100 text-red-700";
   }
@@ -478,7 +480,7 @@ const awaitingShipment = ordersAwaitingShipment.length;
                 <span
   className={`ml-2 rounded-full px-3 py-1 text-xs font-semibold ${
     order.fulfillmentStatus === "DELIVERED"
-      ? "bg-purple-100 text-purple-700"
+      ? "bg-emerald-100 text-emerald-800"
       : order.fulfillmentStatus === "SHIPPED"
       ? "bg-green-100 text-green-700"
       : "bg-yellow-100 text-yellow-800"
