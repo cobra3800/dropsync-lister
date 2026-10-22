@@ -145,6 +145,14 @@ async updateShipping(
   'Cannot update shipping on a canceled order',
 );
   }
+  if (
+  order.fulfillmentStatus === 'DELIVERED' &&
+  data.fulfillmentStatus === 'SHIPPED'
+) {
+  throw new BadRequestException(
+    'Cannot change a delivered order back to shipped.',
+  );
+}
 const isTestOrder =
   order.externalOrderId?.startsWith('DROPSYNC-') ?? false;
 
