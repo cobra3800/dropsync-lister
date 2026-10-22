@@ -295,6 +295,33 @@ const awaitingShipment = ordersAwaitingShipment.length;
 
       </div>
 
+<div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  {[
+    { label: "Pending Orders", status: "PENDING", color: "text-yellow-700" },
+    { label: "Shipped Orders", status: "SHIPPED", color: "text-blue-700" },
+    { label: "Delivered Orders", status: "DELIVERED", color: "text-green-700" },
+    { label: "Canceled Orders", status: "CANCELLED", color: "text-red-700" },
+  ].map((item) => (
+    <div
+      key={item.label}
+      className="rounded-xl border bg-white p-5 shadow-sm"
+    >
+      <p className="text-sm text-gray-500">{item.label}</p>
+      <p className={`mt-2 text-3xl font-bold ${item.color}`}>
+        {orders.filter((order) =>
+          item.status === "PENDING"
+            ? order.fulfillmentStatus !== "SHIPPED" &&
+              order.fulfillmentStatus !== "DELIVERED" &&
+              !order.status.toUpperCase().includes("CANCEL")
+            : item.status === "CANCELLED"
+              ? order.status.toUpperCase().includes("CANCEL")
+              : order.fulfillmentStatus === item.status
+        ).length}
+      </p>
+    </div>
+  ))}
+</div>
+
 <div className="rounded-xl border border-orange-200 bg-orange-50 p-5 shadow-sm">
   <h2 className="text-lg font-bold text-orange-800">
     Orders Needing Attention
