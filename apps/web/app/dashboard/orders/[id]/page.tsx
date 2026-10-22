@@ -106,15 +106,31 @@ async function handleSaveShipping() {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to save shipping");
-    }
+  const errorData = await response.json().catch(() => null);
+
+  const errorMessage = errorData?.message;
+
+  throw new Error(
+    Array.isArray(errorMessage)
+      ? errorMessage.join(", ")
+      : typeof errorMessage === "string"
+        ? errorMessage
+        : "Failed to save shipping"
+  );
+}
 
     const updatedOrder = await response.json();
     setOrder(updatedOrder);
     alert("Shipping information saved!");
   } catch (err) {
-    alert("Unable to save shipping information.");
-  } finally {
+  const message =
+    err instanceof Error
+      ? err.message
+      : "Unable to save shipping information.";
+
+  alert(message);
+}
+    finally {
     setSavingShipping(false);
   }
 }
