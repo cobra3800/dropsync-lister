@@ -303,9 +303,18 @@ const awaitingShipment = ordersAwaitingShipment.length;
     { label: "Canceled Orders", status: "CANCELLED", color: "text-red-700" },
   ].map((item) => (
     <div
-      key={item.label}
-      className="rounded-xl border bg-white p-5 shadow-sm"
-    >
+  key={item.label}
+  onClick={() => {
+  if (item.status === "CANCELLED") {
+    setStatusFilter("CANCELED");
+    setShippingFilter("ALL");
+  } else {
+    setStatusFilter("ALL");
+    setShippingFilter(item.status);
+  }
+}}
+  className="rounded-xl border bg-white p-5 shadow-sm cursor-pointer hover:bg-gray-50 hover:shadow-md transition"
+>
       <p className="text-sm text-gray-500">{item.label}</p>
       <p className={`mt-2 text-3xl font-bold ${item.color}`}>
         {orders.filter((order) =>
