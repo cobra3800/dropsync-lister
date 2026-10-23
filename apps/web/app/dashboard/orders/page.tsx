@@ -225,15 +225,21 @@ const paginatedOrders = sortedOrders.slice(
 
 
 const ordersAwaitingShipment = activeOrders.filter((order) => {
-  const fulfillment = (order.fulfillmentStatus || "").toUpperCase();
-  const status = (order.status || "").toUpperCase();
+  const fulfillment = (order.fulfillmentStatus || "")
+    .trim()
+    .toUpperCase();
+
+  const status = (order.status || "")
+    .trim()
+    .toUpperCase();
 
   const shipped =
-    fulfillment.includes("SHIPPED") ||
-    fulfillment.includes("FULFILLED") ||
-    status.includes("SHIPPED") ||
-    status.includes("FULFILLED") ||
-    Boolean(order.trackingNumber?.trim());
+    fulfillment === "SHIPPED" ||
+    fulfillment === "DELIVERED" ||
+    (
+      !fulfillment &&
+      (status === "SHIPPED" || status === "FULFILLED")
+    );
 
   return !shipped;
 });
@@ -354,9 +360,13 @@ const awaitingShipment = ordersAwaitingShipment.length;
   <div className="mt-4 space-y-3">
     {ordersAwaitingShipment.map((order) => (
       <div
-        key={order.id}
-        className="rounded-lg border border-orange-200 bg-white p-4"
-      >
+  key={order.id}
+  onClick={() => {
+    window.location.href =
+      `/dashboard/orders/${encodeURIComponent(order.id)}`;
+  }}
+  className="rounded-lg border border-orange-200 bg-white p-4 cursor-pointer hover:bg-orange-50 hover:shadow-md transition"
+>
         <p className="font-semibold text-gray-900">
           {order.title}
         </p>
