@@ -175,7 +175,9 @@ if (!isTestOrder && isTestTracking) {
   fulfillmentStatus: data.fulfillmentStatus,
 
   shippedAt:
-  data.fulfillmentStatus === 'SHIPPED' && !order.shippedAt
+  (data.fulfillmentStatus === 'SHIPPED' ||
+    data.fulfillmentStatus === 'DELIVERED') &&
+  !order.shippedAt
     ? new Date()
     : undefined,
 
