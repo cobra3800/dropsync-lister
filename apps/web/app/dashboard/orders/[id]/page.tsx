@@ -23,7 +23,8 @@ shippingCarrier?: string | null;
 trackingNumber?: string | null;
 fulfillmentStatus?: string | null;
 createdAt: string;
-
+shippedAt?: string | null;
+deliveredAt?: string | null;
 };
 
 export default function OrderDetailsPage() {
@@ -278,6 +279,39 @@ async function handleSaveShipping() {
   </button>
 </div>
 
+         {/* Order Status History */}
+      <div className="rounded-lg border p-6 mt-6">
+        <h2 className="text-xl font-semibold mb-4">
+          Order Status History
+        </h2>
+
+        <div className="space-y-4">
+          <div>
+            <p className="font-semibold">Order Placed</p>
+            <p className="text-gray-600">
+              {new Date(order.createdAt).toLocaleString()}
+            </p>
+          </div>
+
+          {order.shippedAt && (
+            <div>
+              <p className="font-semibold">Shipped</p>
+              <p className="text-gray-600">
+                {new Date(order.shippedAt).toLocaleString()}
+              </p>
+            </div>
+          )}
+
+          {order.deliveredAt && (
+            <div>
+              <p className="font-semibold">Delivered</p>
+              <p className="text-gray-600">
+                {new Date(order.deliveredAt).toLocaleString()}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
