@@ -209,9 +209,16 @@ const paginatedOrders = sortedOrders.slice(
   (safeCurrentPage - 1) * pageSize,
   safeCurrentPage * pageSize
 );
-  const activeOrders = orders.filter(
-    (order) => !order.status.toUpperCase().includes("CANCEL")
-  );
+  const activeOrders = orders.filter((order) => {
+  const status = (order.status || "").toUpperCase();
+  const fulfillment = (order.fulfillmentStatus || "").toUpperCase();
+
+  const canceled = status.includes("CANCEL");
+  const delivered =
+    fulfillment === "DELIVERED" || status === "DELIVERED";
+
+  return !canceled && !delivered;
+});
 
   const salesByCurrency = activeOrders.reduce<Record<string, number>>(
     (totals, order) => {
