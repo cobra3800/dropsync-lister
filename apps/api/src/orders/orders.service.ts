@@ -175,14 +175,20 @@ if (!isTestOrder && isTestTracking) {
   fulfillmentStatus: data.fulfillmentStatus,
 
   shippedAt:
-  (data.fulfillmentStatus === 'SHIPPED' ||
-    data.fulfillmentStatus === 'DELIVERED') &&
-  !order.shippedAt
+  data.fulfillmentStatus === 'NOT_SHIPPED'
+    ? null
+    : (data.fulfillmentStatus === 'SHIPPED' ||
+        data.fulfillmentStatus === 'DELIVERED') &&
+      !order.shippedAt
     ? new Date()
     : undefined,
 
   deliveredAt:
-  data.fulfillmentStatus === 'DELIVERED' && !order.deliveredAt
+  data.fulfillmentStatus === 'NOT_SHIPPED' ||
+  data.fulfillmentStatus === 'SHIPPED'
+    ? null
+    : data.fulfillmentStatus === 'DELIVERED' &&
+      !order.deliveredAt
     ? new Date()
     : undefined,
 },
