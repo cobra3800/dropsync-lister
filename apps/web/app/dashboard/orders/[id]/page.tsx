@@ -136,6 +136,43 @@ async function handleSaveShipping() {
   }
 }
 
+  async function handleSubmitTracking() {
+    if (!order || order.marketplace.toUpperCase() !== "EBAY") {
+      alert("Tracking can only be submitted for eBay orders.");
+      return;
+    }
+
+    if (!shippingCarrier.trim() || !trackingNumber.trim()) {
+      alert("Enter a shipping carrier and tracking number first.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Submit this tracking information to eBay? This may mark the order as shipped."
+    );
+
+    if (!confirmed) return;
+
+    try {
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+      const response = await fetch(
+        `${apiUrl}/orders/${encodeURIComponent(order.id)}/submit-tracking`,
+        { method: "POST" }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.message || "Failed to submit tracking.");
+      }
+
+      alert("Tracking submitted to eBay successfully!");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Tracking submission failed.");
+    }
+  }
+
   if (loading) {
     return <div className="p-6">Loading order...</div>;
   }
@@ -277,6 +314,17 @@ async function handleSaveShipping() {
   >
     {savingShipping ? "Saving..." : "Save Shipping"}
   </button>
+
+  {order.marketplace?.toUpperCase() === "EBAY" &&
+  !["CANCELED", "CANCELLED"].includes(order.status?.toUpperCase() || "") && (
+  <button
+    type="button"
+    onClick={handleSubmitTracking}
+    className="rounded-lg bg-green-600 px-5 py-3 text-white hover:bg-green-700"
+  >
+    Submit Tracking to eBay
+  </button>
+)}
 </div>
 
          {/* Order Status History */}

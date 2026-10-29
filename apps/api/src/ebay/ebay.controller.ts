@@ -7,6 +7,7 @@ import {
   Put,
   Query,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { OfferService } from './offer.service.js';
 import type { Response } from 'express';
@@ -20,7 +21,7 @@ import { AspectsService } from './aspects.service.js';
 import { createHash } from 'node:crypto';
 import { PrismaService } from '../prisma.service';
 import { EbayAccountRepository } from './repositories/ebay-account.repository';
-
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('ebay')
 export class EbayController {
   constructor(
@@ -398,5 +399,23 @@ handleAccountDeletionNotification(@Body() body: unknown) {
   console.log('eBay account-deletion notification received:', body);
 
   return { received: true };
+}
+@Post('shipping-fulfillment')
+@UseGuards(JwtAuthGuard)
+async submitShippingFulfillment(
+  @Body()
+  body: {
+    storeId: string;
+    ebayOrderId: string;
+    shippingCarrier: string;
+    trackingNumber: string;
+  },
+) {
+  return this.ebayService.createShippingFulfillment(
+    body.storeId,
+    body.ebayOrderId,
+    body.shippingCarrier,
+    body.trackingNumber,
+  );
 }
 }

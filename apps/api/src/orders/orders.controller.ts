@@ -1,5 +1,6 @@
 
-import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, Request, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard.js';
 import { OrdersService } from './orders.service';
 
 @Controller('orders')
@@ -33,7 +34,15 @@ updateShipping(
     fulfillmentStatus?: string;
   },
 ) {
-  return this.ordersService.updateShipping(id, data);
-}
+      return this.ordersService.updateShipping(id, data);
+  }
 
+  @Post(':id/submit-tracking')
+  @UseGuards(JwtAuthGuard)
+  submitTracking(
+  @Param('id') id: string,
+  @Request() req: any,
+) {
+  return this.ordersService.submitTrackingToEbay(id, req.user.id);
+}
 }

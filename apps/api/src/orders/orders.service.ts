@@ -195,4 +195,71 @@ if (!isTestOrder && isTestTracking) {
   });
 }
 
+async submitTrackingToEbay(id: string, userId: string) {
+  const order = await this.prisma.order.findFirst({
+  where: {
+    id,
+    store: {
+      organization: {
+        memberships: {
+          some: {
+            userId,
+          },
+        },
+      },
+    },
+  },
+});
+
+  if (!order) {
+    throw new BadRequestException('Order not found.');
+  }
+
+  if (
+    order.marketplace !== 'EBAY' ||
+    !order.externalOrderId ||
+    order.externalOrderId.startsWith('DROPSYNC-')
+  ) {
+    throw new BadRequestException(
+      'Only real eBay orders can submit tracking.',
+    );
+  }
+
+  if (order.status === 'CANCELED') {
+    throw new BadRequestException(
+      'Cannot submit tracking for a canceled order.',
+    );
+  }
+
+  const shippingCarrier = order.shippingCarrier?.trim();
+  const trackingNumber = order.trackingNumber?.trim();
+
+  if (!shippingCarrier || !trackingNumber) {
+    throw new BadRequestException(
+      'Save a shipping carrier and tracking number first.',
+    );
+  }
+
+  if (
+    trackingNumber.toUpperCase().startsWith('DROPSYNC-TEST-')
+  ) {
+    throw new BadRequestException(
+      'Test tracking numbers cannot be submitted to eBay.',
+    );
+  }
+
+  if (!order.storeId) {
+    throw new BadRequestException(
+      'This order is not connected to an eBay store.',
+    );
+  }
+
+  return this.ebayService.createShippingFulfillment(
+    order.storeId,
+    order.externalOrderId,
+    shippingCarrier,
+    trackingNumber,
+  );
+}
+
 }
