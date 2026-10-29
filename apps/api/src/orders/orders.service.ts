@@ -254,12 +254,22 @@ async submitTrackingToEbay(id: string, userId: string) {
     );
   }
 
-  return this.ebayService.createShippingFulfillment(
-    order.storeId,
-    order.externalOrderId,
-    shippingCarrier,
-    trackingNumber,
-  );
+  const result = await this.ebayService.createShippingFulfillment(
+  order.storeId,
+  order.externalOrderId,
+  shippingCarrier,
+  trackingNumber,
+);
+
+await this.prisma.order.update({
+  where: { id: order.id },
+  data: {
+    fulfillmentStatus: 'SHIPPED',
+    shippedAt: new Date(),
+  },
+});
+
+return result;
 }
 
 }
