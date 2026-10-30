@@ -168,6 +168,7 @@ async function handleSaveShipping() {
       }
 
       alert("Tracking submitted to eBay successfully!");
+      window.location.reload();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Tracking submission failed.");
     }
