@@ -173,7 +173,13 @@ if (!isTestOrder && isTestTracking) {
   shippingCarrier: data.shippingCarrier,
   trackingNumber: data.trackingNumber,
   fulfillmentStatus: data.fulfillmentStatus,
-
+status: data.fulfillmentStatus === 'DELIVERED'
+  ? 'DELIVERED'
+  : data.fulfillmentStatus === 'SHIPPED'
+  ? 'SHIPPED'
+  : data.fulfillmentStatus === 'NOT_SHIPPED'
+  ? 'PENDING'
+  : order.status,
   shippedAt:
   data.fulfillmentStatus === 'NOT_SHIPPED'
     ? null
