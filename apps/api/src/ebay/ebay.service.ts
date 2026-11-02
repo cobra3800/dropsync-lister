@@ -690,8 +690,6 @@ async getOrders(storeId: string) {
   );
 
   const responseText = await response.text();
-  console.log('EBAY ORDERS STATUS:', response.status);
-console.log('EBAY ORDERS RESPONSE:', responseText);
   if (!response.ok) {
     throw new BadRequestException(
       `Unable to fetch eBay orders: ${response.status} ${responseText}`,
