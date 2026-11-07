@@ -159,7 +159,7 @@ async function handleSaveShipping() {
 
       const response = await fetch(
         `${apiUrl}/orders/${encodeURIComponent(order.id)}/submit-tracking`,
-        { method: "POST" }
+        { method: "POST", credentials: "include" }
       );
 
       if (!response.ok) {

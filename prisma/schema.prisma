@@ -186,9 +186,10 @@ model Order {
   status          String   @default("PENDING")
   total           Float?
   currency        String   @default("USD")
-  itemId          String?
-  sku             String?
-  title           String?
+  itemId       String?
+lineItemId   String?
+sku          String?
+title        String?
   quantity        Int      @default(1)
   shippingName    String?
   shippingAddress String?
