@@ -6,6 +6,7 @@ import type { SupplierProduct } from './product.types.js';
 @Injectable()
 export class WalmartImporter {
   async import(url: string): Promise<SupplierProduct> {
+    console.log('WALMART IMPORTER CALLED:', url);
     const response = await axios.get(url, {
       headers: {
   'User-Agent':
@@ -18,7 +19,58 @@ export class WalmartImporter {
     });
 
     const $ = cheerio.load(response.data);
+console.log('WALMART HTML LENGTH:', response.data.length);
+console.log('WALMART NEXT DATA:', $('script#__NEXT_DATA__').length);
+const nextDataText = $('script#__NEXT_DATA__').html();
 
+if (nextDataText) {
+  const nextData = JSON.parse(nextDataText);
+
+  console.log(
+    'WALMART NEXT DATA KEYS:',
+    Object.keys(nextData.props?.pageProps || {})
+  );
+  console.log(
+  'WALMART INITIAL DATA KEYS:',
+  Object.keys(nextData.props?.pageProps?.initialData || {})
+);
+console.log(
+  'WALMART DATA KEYS:',
+  Object.keys(nextData.props?.pageProps?.initialData?.data || {})
+);
+console.log(
+  'WALMART PRODUCT KEYS:',
+  Object.keys(
+    nextData.props?.pageProps?.initialData?.data?.product || {}
+  )
+);
+console.log(
+  'WALMART STOCK KEYS:',
+  Object.keys(
+    nextData.props?.pageProps?.initialData?.data?.product || {}
+  ).filter((key) =>
+    /stock|availability|fulfill|offer|inventory|shipping/i.test(key)
+  )
+);
+console.log(
+  'WALMART FULFILLMENT SUMMARY:',
+  JSON.stringify(
+    nextData.props?.pageProps?.initialData?.data?.product
+      ?.fulfillmentSummary ?? null,
+    null,
+    2
+  )
+);
+console.log(
+  'WALMART AVAILABILITY:',
+  JSON.stringify(
+    nextData.props?.pageProps?.initialData?.data?.product
+      ?.availabilityStatus ?? null,
+    null,
+    2
+  )
+);
+}
     const title =
   $('h1').first().text().trim() ||
   $('title').text().trim() ||
@@ -63,10 +115,54 @@ const images = Array.from(
 const specifications: Record<string, string> = {};
 let description = '';
 let brand = '';
+let category = '';
+let availability: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN' = 'UNKNOWN';
+const walmartAvailability =
+  $('script#__NEXT_DATA__').length
+    ? JSON.parse($('script#__NEXT_DATA__').html() || '{}')
+        ?.props?.pageProps?.initialData?.data?.product
+        ?.availabilityStatus
+    : undefined;
+console.log(
+  'WALMART BRAND FIELDS:',
+  Object.entries(
+    JSON.parse($('script#__NEXT_DATA__').html() || '{}')
+      ?.props?.pageProps?.initialData?.data?.product || {}
+  ).filter(([key]) => key.toLowerCase().includes('category'))
+);
+const walmartProduct = JSON.parse(
+  $('script#__NEXT_DATA__').html() || '{}'
+)?.props?.pageProps?.initialData?.data?.product;
+console.log(
+  'WALMART CATEGORY PATH:',
+  JSON.stringify(walmartProduct?.category?.path, null, 2)
+);
+if (typeof walmartProduct?.brand === 'string') {
+  brand = walmartProduct.brand.trim();
+}
+const walmartCategoryPath = walmartProduct?.category?.path;
 
+if (Array.isArray(walmartCategoryPath)) {
+  const lastCategory = walmartCategoryPath[walmartCategoryPath.length - 1];
+
+  if (typeof lastCategory?.name === 'string') {
+    category = lastCategory.name.trim();
+  }
+}
+if (walmartAvailability === 'IN_STOCK') {
+  availability = 'IN_STOCK';
+} else if (walmartAvailability === 'OUT_OF_STOCK') {
+  availability = 'OUT_OF_STOCK';
+}
+{
+  console.log(
+  'WALMART JSON-LD SCRIPT COUNT:',
+  $('script[type="application/ld+json"]').length
+);
 $('script[type="application/ld+json"]').each((_, element) => {
   try {
     const raw = $(element).html();
+    console.log('WALMART JSON-LD CONTENT:', raw?.slice(0, 1500));
     if (!raw) return;
 
     const parsed = JSON.parse(raw);
@@ -91,16 +187,41 @@ $('script[type="application/ld+json"]').each((_, element) => {
         if (typeof candidate.description === 'string') {
           description = candidate.description.trim();
         }
-
-        if (typeof candidate.brand === 'string') {
+console.log('WALMART BRAND DATA:', candidate.brand);
+        if (!brand && typeof candidate.brand === 'string') {
           brand = candidate.brand.trim();
-        } else if (
+        } else if (!brand &&
           candidate.brand &&
           typeof candidate.brand.name === 'string'
         ) {
           brand = candidate.brand.name.trim();
         }
+        console.log('WALMART PRODUCT OFFERS:', JSON.stringify(candidate.offers, null, 2));
+const offers = Array.isArray(candidate.offers)
+  ? candidate.offers
+  : candidate.offers
+    ? [candidate.offers]
+    : [];
 
+for (const offer of offers) {
+  if (!offer || typeof offer !== 'object') continue;
+console.log('WALMART OFFER DATA:', JSON.stringify(offer, null, 2));
+  const stock = String(
+  offer.availability ||
+  offer.availabilityStatus ||
+  offer.stockStatus ||
+  ''
+).toLowerCase();
+
+  if (stock.includes('outofstock') || stock.includes('soldout')) {
+    availability = 'OUT_OF_STOCK';
+    break;
+  }
+
+  if (stock.includes('instock') || stock.includes('limitedavailability')) {
+    availability = 'IN_STOCK';
+  }
+}
         const properties = candidate.additionalProperty;
 
         if (Array.isArray(properties)) {
@@ -159,6 +280,9 @@ $('script[type="application/ld+json"]').each((_, element) => {
     // Ignore malformed structured-data blocks.
   }
 });
+
+}
+
 return {
   title,
   brand,
@@ -167,8 +291,9 @@ return {
   description,
   features: [],
   images,
-  category: '',
+  category,
   specifications,
+  availability,
 };
   }
 }

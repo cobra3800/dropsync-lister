@@ -12,6 +12,7 @@ type Product = {
   category?: string;
   description?: string;
   images?: string[];
+  availability?: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
 };
 
 type Listing = {
@@ -694,6 +695,16 @@ const response = await fetch(
               <Info label="Price" value={`$${Number(product.price ?? 0).toFixed(2)}`} />
               <Info label="Brand" value={product.brand ?? 'Unknown'} />
               <Info label="Category" value={product.category ?? 'Unknown'} />
+              <Info
+  label="Stock Availability"
+  value={
+    product.availability === 'IN_STOCK'
+      ? 'In Stock'
+      : product.availability === 'OUT_OF_STOCK'
+        ? 'Out of Stock'
+        : 'Unknown'
+  }
+/>
             </div>
 
             {product.images?.[0] ? (

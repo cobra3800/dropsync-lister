@@ -15,6 +15,7 @@ export interface SupplierProduct {
   images: string[];
   category: string;
   specifications: Record<string, string>;
+  availability?: 'IN_STOCK' | 'OUT_OF_STOCK' | 'UNKNOWN';
 }
 
 export interface ImportedProduct extends SupplierProduct {
