@@ -85,7 +85,11 @@ export class ImportQueueService {
     const product = await this.importerService.importProduct(
       job.supplierUrl,
     );
-
+if (product.availability === 'OUT_OF_STOCK') {
+  throw new Error(
+    'Import stopped: Supplier product is out of stock. Listing will not be published to eBay.',
+  );
+}
     await this.prisma.importQueue.update({
       where: {
         id: job.id,

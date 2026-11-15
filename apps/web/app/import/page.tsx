@@ -190,7 +190,12 @@ const response = await fetch(`${API_URL}/stores`, {
       setError('Import a product first.');
       return;
     }
-
+if (product.availability === 'OUT_OF_STOCK') {
+  setError(
+    'This product is out of stock at the supplier and cannot be listed on eBay.'
+  );
+  return;
+}
     setPublishing(true);
     setError('');
     setPublishStep('Adding product to import queue...');
@@ -338,6 +343,13 @@ async function clearCompletedQueue() {
       setError('Import a product and generate a listing first.');
       return;
     }
+
+if (product.availability === 'OUT_OF_STOCK') {
+  setError(
+    'This product is out of stock at the supplier and cannot be listed on eBay.'
+  );
+  return;
+}
 
     setPublishing(true);
     setError('');
