@@ -818,7 +818,7 @@ const response = await fetch(
                 <button
                   type="button"
                   onClick={handlePublishClick}
-                  disabled={publishing || generating || loading}
+                  disabled={publishing || generating || loading || product?.availability === 'OUT_OF_STOCK'}
                   className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold disabled:opacity-50"
                 >
                   🚀 Publish to eBay
