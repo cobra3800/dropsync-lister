@@ -116,6 +116,11 @@ export default function ImportPage() {
       const data = await readJson(response);
       if (!response.ok) throw new Error(messageFrom(data, 'Product import failed'));
       setProduct(data as Product);
+      if ((data as Product).availability === 'OUT_OF_STOCK') {
+  setError(
+    'Warning: This product is out of stock at the supplier. You can view its details, but it cannot be listed on eBay.'
+  );
+}
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Product import failed');
     } finally {
