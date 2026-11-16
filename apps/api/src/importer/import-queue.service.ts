@@ -212,18 +212,28 @@ console.log('SELECTED EBAY POLICY IDS:', {
         ? productData.sku.trim()
         : `DS-${job.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20)}`;
 
-    const rawPrice = Number(
-      listingData.price ?? productData.price ?? 0,
-    );
+    const supplierPrice = Number(productData.price);
 
-    const offerPrice =
-      Number.isFinite(rawPrice) && rawPrice > 0
-        ? rawPrice
-        : 19.99;
+if (!Number.isFinite(supplierPrice) || supplierPrice <= 0) {
+  throw new Error(
+    'Auto List stopped: Supplier price is missing or invalid.',
+  );
+}
+
+const aiPrice = Number(listingData.price);
+
+const minimumPrice = Math.ceil(supplierPrice * 1.30 * 100) / 100;
+
+const offerPrice =
+  Number.isFinite(aiPrice) && aiPrice >= minimumPrice
+    ? aiPrice
+    : minimumPrice;
 console.log('PRICE DEBUG:', {
   listingPrice: listingData.price,
   productPrice: productData.price,
-  rawPrice,
+  supplierPrice,
+  aiPrice,
+  minimumPrice,
   offerPrice,
   offerPriceType: typeof offerPrice,
 });
