@@ -717,6 +717,7 @@ console.log('EBAY ITEM URL:', ebayItem.itemWebUrl);
 console.log('EBAY ITEM LOT SIZE:', ebayItem.lotSize);
 console.log('EBAY ITEM QUANTITY:', ebayItem.quantity);
 console.log('EBAY ITEM AVAILABILITY:', ebayItem.estimatedAvailabilities);
+console.log('EBAY ITEM END DATE:', ebayItem.itemEndDate);
 if (!response.ok) {
   console.error(
     'EBAY LISTING STATUS ERROR:',
@@ -728,6 +729,12 @@ if (!response.ok) {
   throw new Error(
     `Unable to verify eBay listing ${itemId}: HTTP ${response.status}`,
   );
+}
+
+const endDate = ebayItem.itemEndDate;
+
+if (endDate && new Date(endDate).getTime() <= Date.now()) {
+  return { status: 'ENDED' };
 }
 
 return { status: 'ACTIVE' };

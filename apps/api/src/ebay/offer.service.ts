@@ -252,6 +252,10 @@ async getOfferBySku(storeId: string, sku: string) {
     throw new BadRequestException(ebayResult);
   }
 
+  console.log(
+  'EBAY OFFER STATUS DETAILS:',
+  JSON.stringify(ebayResult, null, 2),
+);
   return ebayResult;
 }
 async updatePriceQuantity(input: {
@@ -358,7 +362,6 @@ if (!response.ok || errors.length > 0) {
     'eBay price/quantity update succeeded:',
     ebayResult,
   );
-
   return ebayResult;
 }
 async createPaymentPolicy(storeId: string) {
